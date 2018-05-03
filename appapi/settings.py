@@ -38,6 +38,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'account',
+    'mainpage',
+    'notice',
+    'circle',
     'rest_framework',
     'rest_framework.authtoken',
     #'rest_framework_docs',
@@ -128,7 +131,9 @@ REST_FRAMEWORK = {
     ),
     'EXCEPTION_HANDLER': (
         'rewrite.exception.custom_exception_handler'
-    )
+    ),
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',  # 分页
+    'PAGE_SIZE': 10
 }
 
 
@@ -152,6 +157,8 @@ AUTH_USER_MODEL = 'account.LoginUser'
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
+
+
 
 STATIC_URL = '/api/v1/static/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media').replace("\\", "/")

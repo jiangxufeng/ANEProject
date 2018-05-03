@@ -51,14 +51,9 @@ class LoginUser(AbstractUser):
     school_id = models.CharField(max_length=13, verbose_name="school_id", null=True, unique=True)
     # 手机
     phone = models.CharField(max_length=11, null=True, verbose_name="phone")
-    # 关注的人
-    friends = models.ManyToManyField('self', blank=True, related_name='friends')
-    # 屏蔽的人
-    blacklist = models.ManyToManyField('self', blank=True, related_name='shield')
-
 
     class Meta:
-        db_table = 'Loginuser'
+        db_table = 'LoginUser'
         verbose_name_plural = 'user'
         ordering = ['-date_joined']
 
@@ -67,6 +62,17 @@ class LoginUser(AbstractUser):
     #
     # def save(self, *args, **kwargs):
     #     self.school_id = int(self.get_username())
+
+
+class Follow(models.Model):
+
+    # 关注的人
+    follow = models.ForeignKey(LoginUser, related_name='follows')
+    # 粉丝
+    fans = models.ForeignKey(LoginUser, related_name='fans')
+
+    def __str__(self):
+        return self.follow.username
 
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)

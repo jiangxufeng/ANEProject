@@ -25,7 +25,7 @@ import datetime
 #     tree = html.fromstring(book_content)
 #     score = tree.xpath('//*[@id="interest_sectl"]/div/div[2]/strong/text()')[0].lstrip().rstrip()
 #     print(score)
-def get_book_score(bookname):
+def get_level(bookname):
     header = {
             'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
@@ -37,12 +37,11 @@ def get_book_score(bookname):
     content = requests.get(get_url, headers=header).json()
    # print(content)
     score = content['books'][0]['rating']['average']
-  #  print(score)
     return score
 
 
 if __name__ == '__main__':
-    #start_time = datetime.datetime.now()
-    get_book_score('百年孤独')
-   # end_time = datetime.datetime.now()
-   # print('time:%s' %(end_time-start_time))
+    start_time = datetime.datetime.now()
+    print(get_level('风筝的人'))
+    end_time = datetime.datetime.now()
+    print('time:%s' % (end_time-start_time))
