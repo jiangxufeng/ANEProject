@@ -18,11 +18,9 @@ def Userlogin(username, password):
         'https': None,
     }
     content = requests.get(url3, headers=headers, proxies=proxy).json()
-    #print(content)
     result = content['status']
-    url_2 = 'http://seat.lib.whu.edu.cn/rest/v2/user?token=%s' % (content['data']['token'])
-
     if result == 'success':
+        url_2 = 'http://seat.lib.whu.edu.cn/rest/v2/user?token=%s' % (content['data']['token'])
         json_2 = requests.get(url_2, headers=headers, proxies=proxy).json()
         return json_2['data']['name']
     else:

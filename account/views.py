@@ -21,21 +21,22 @@ from .serializers import (
     UserDetailSerializer,
     UserLoginSerializer,
     UserBindPhoneSerializer,
-    # FansSerializer,
+    FansSerializer,
     FollowSerializer,
 )
 #from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from rewrite.authentication import ExpiringTokenAuthentication
 from .UserLogin import Userlogin
-from .models import LoginUser, Follow
+from .models import LoginUser, Follow#, Fans
 from django.contrib.auth import authenticate
 from rewrite.authentication import expire_token
 from rewrite.permissions import IsOwner
 from rest_framework import mixins
 from rest_framework import generics
+from rewrite.pagination import Pagination
 from django.conf import settings
 
-EXPIRE_MINUTES = getattr(settings, 'REST_FRAMEWORK_TOKEN_EXPIRE_MINUTES', 1)
+#EXPIRE_MINUTES = getattr(settings, 'REST_FRAMEWORK_TOKEN_EXPIRE_MINUTES', 1)
 
 
 # 用户登录
@@ -51,8 +52,8 @@ class UserLoginView(APIView):
         if serializer.is_valid(raise_exception=True):
             username = serializer.validated_data['username']
             password = serializer.validated_data['password']
-            indatabase = LoginUser.objects.filter(username=username)
-            if indatabase:
+            in_database = LoginUser.objects.filter(username=username)
+            if in_database:
                 user = authenticate(username=username, password=password)
                 if user:
                     content = expire_token(user)
@@ -139,7 +140,6 @@ class UserChangeInfoView(mixins.UpdateModelMixin,
                 'error_msg': 'Failed to update the information',
             }, HTTP_400_BAD_REQUEST)
         return msg
-#       return self.update(request, *args, **kwargs)
 
 
 # 修改密码
@@ -187,6 +187,7 @@ class UserResetPasswordView(APIView):
 # 绑定手机与解绑
 class UserBindPhoneView(APIView):
     # permission_classes = (IsOwner, IsAuthenticated)
+    permission_classes = (AllowAny,)
     serializer_class = UserBindPhoneSerializer
     # authentication_classes = (ExpiringTokenAuthentication)
 
@@ -239,33 +240,42 @@ class MakeFriendView(APIView):
     permission_classes = (AllowAny,)
     #authentication_classes = (ExpiringTokenAuthentication)
 
+    def is_same(self, idol, fans):
+        return idol == fans
+
     def get(self, request, idol, fans):
-        # print(idol, fans)
-        try:
-            idols = LoginUser.objects.get(pk=idol)
-            fan = LoginUser.objects.get(pk=fans)
-        except Http404:
+        if self.is_same(idol, fans):
             msg = Response({
                 'error': '1',
                 'data': '',
-                'error_msg': 'Not found the user'
+                'error_msg': "You can't follow yourself.It's invalid"
             }, HTTP_404_NOT_FOUND)
-            return msg
-        follow = Follow.objects.create(follow=idols, fans=fan)
-        follow.save()
-        msg = Response({
-            'error': '0',
-            'data': '',
-            'message': 'Pay attention to the user successfully'
-        }, HTTP_200_OK)
+        else:
+            try:
+                idols = LoginUser.objects.get(pk=idol)
+                fan = LoginUser.objects.get(pk=fans)
+            except LoginUser.DoesNotExist:
+                msg = Response({
+                    'error': '1',
+                    'data': '',
+                    'error_msg': 'Not found the user'
+                }, HTTP_404_NOT_FOUND)
+                return msg
+            follow = Follow.objects.create(follows=idols, fans=fan)
+            follow.save()
+            msg = Response({
+                'error': '0',
+                'data': '',
+                'message': 'Pay attention to the user successfully'
+            }, HTTP_200_OK)
         return msg
 
     def delete(self, request, idol, fans):
         try:
             idol = LoginUser.objects.get(pk=idol)
             fans = LoginUser.objects.get(pk=fans)
-            follow = Follow.objects.get(follow=idol, fans=fans)
-        except Http404:
+            follow = Follow.objects.get(fans=fans, follows=idol)
+        except LoginUser.DoesNotExist:
             msg = Response({
                 'error': '1',
                 'data': '',
@@ -281,38 +291,43 @@ class MakeFriendView(APIView):
         return msg
 
 
-# 获取关注的人和粉丝
-class FollowAndFansView(APIView):
-    permission_classes = (AllowAny,)
-    # authentication_classes = (ExpiringTokenAuthentication,)
-    serializer_class = FollowSerializer
+# 获取关注的人
 
-    def get(self, request, pk):
+class GetFollowView(generics.ListAPIView):
+    permission_classes = (AllowAny,)
+    serializer_class = FollowSerializer
+    pagination_class = Pagination
+
+    def get_user(self, user_id):
         try:
-            user = LoginUser.objects.get(pk=pk)
-        except Http404:
-            msg = Response({
-                'error': '1',
-                'data': '',
-                'error_msg': 'Not found the user'
-            }, HTTP_404_NOT_FOUND)
-            return msg
-        queryset = Follow.objects.filter(fans=user)
-        serializer = FollowSerializer(queryset, many=True)
-        print(serializer.data)
-        msg = Response({
-            'data': {
-                'follows': serializer.data,
-            },
-            'error': '0',
-        }, HTTP_200_OK)
-        # else:
-        #     msg = Response({
-        #         'data': '',
-        #         'error': '1',
-        #         'error_msg': serializer.errors
-        #     }, HTTP_400_BAD_REQUEST)
-        return msg
+            return LoginUser.objects.get(id=user_id)
+        except LoginUser.DoesNotExist:
+            raise Http404
+
+    def get_queryset(self):
+        owner = self.get_user(user_id=self.kwargs['user_id'])
+        queryset = Follow.objects.filter(fans=owner)
+        return queryset
+
+
+# 获取粉丝列表
+class GetFansView(generics.ListAPIView):
+    permission_classes = (AllowAny,)
+    # authentication_classes = (ExpiringTokenAuthentication)
+    serializer_class = FansSerializer
+    pagination_class = Pagination
+
+    def get_user(self, user_id):
+        try:
+            return LoginUser.objects.get(id=user_id)
+        except LoginUser.DoesNotExist:
+            raise Http404
+
+    def get_queryset(self):
+        owner = self.get_user(user_id=self.kwargs['user_id'])
+        queryset = Follow.objects.filter(follows=owner)
+        return queryset
+
 
 
 

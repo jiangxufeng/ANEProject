@@ -10,7 +10,8 @@ from .views import (
     UserLoginView,
     UserBindPhoneView,
     MakeFriendView,
-    FollowAndFansView,
+    GetFollowView,
+    GetFansView,
 )
 
 
@@ -20,7 +21,7 @@ urlpatterns = [
     url(r'^(?P<pk>\d+)/changeInfo/$', UserChangeInfoView.as_view(), name='change_info'),
     url(r'^(?P<pk>\d+)/resetPassword/$', UserResetPasswordView.as_view(), name='reset_password'),
     url(r'^(?P<pk>\d+)/phone/$', UserBindPhoneView.as_view(), name='bind_phone'),
-    url(r'^(?P<idol>\d+)/(?P<fans>\d+)/$', MakeFriendView.as_view(), name='make_friend'),
-    url(r'^follow_fans/(?P<pk>\d+)/$', FollowAndFansView.as_view(), name='follow_fans')
-
+    url(r'^(?P<fans>\d+)/follows/(?P<idol>\d+)/$', MakeFriendView.as_view(), name='make_friend'),
+    url(r'^getFollow/(?P<user_id>\d+)/$', GetFollowView.as_view(), name='get_follow'),
+    url(r'^getFans/(?P<user_id>\d+)/$', GetFansView.as_view(), name='get_fans'),
 ]

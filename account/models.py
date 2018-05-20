@@ -22,7 +22,6 @@ def random_name():
 
 # 上传路径
 def get_upload_to(instance, filename):
-
     user = str(instance.id)
     return user + '-' + 'headimg' + filename[-5:]
 
@@ -59,6 +58,9 @@ class LoginUser(AbstractUser):
 
     def __str__(self):
         return self.username
+
+    def get_headimg_url(self):
+        return '/api/v1/media/' + str(self.headimg)
     #
     # def save(self, *args, **kwargs):
     #     self.school_id = int(self.get_username())
@@ -66,13 +68,24 @@ class LoginUser(AbstractUser):
 
 class Follow(models.Model):
 
-    # 关注的人
-    follow = models.ForeignKey(LoginUser, related_name='follows')
-    # 粉丝
+    # owner = models.ForeignKey(LoginUser, related_name='follows_owner')
+    follows = models.ForeignKey(LoginUser, related_name='follows')
     fans = models.ForeignKey(LoginUser, related_name='fans')
 
     def __str__(self):
-        return self.follow.username
+        return self.follows.username
+
+
+# class Fans(models.Model):
+#
+#     owner = models.ForeignKey(LoginUser, related_name='fans_owner')
+#     fans = models.ForeignKey(LoginUser, related_name='fans')
+#
+#     class Meta:
+#         db_table = 'Fans'
+#
+#     def __str__(self):
+#         return self.owner.username
 
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)

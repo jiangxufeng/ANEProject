@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'circle',
     'rest_framework',
     'rest_framework.authtoken',
+    'django_filters'
     #'rest_framework_docs',
 ]
 
@@ -133,7 +134,10 @@ REST_FRAMEWORK = {
         'rewrite.exception.custom_exception_handler'
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',  # 分页
-    'PAGE_SIZE': 10
+    'PAGE_SIZE': 10,
+    # 过滤
+    'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend',)
+
 }
 
 

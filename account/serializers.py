@@ -6,61 +6,101 @@ from rest_framework.serializers import (
     CharField,
     ModelSerializer,
     ImageField,
-    ReadOnlyField,
+    IntegerField,
     ValidationError,
     HyperlinkedModelSerializer,
     HyperlinkedRelatedField,
+    SerializerMethodField,
 )
-from .models import LoginUser, Follow
+from .models import LoginUser, Follow#, Fans
+from django.shortcuts import reverse
 
 
 # 关注返回信息
-class FollowSerializer(HyperlinkedModelSerializer):
-    follow = HyperlinkedRelatedField(
-        view_name='user_detail',
-        lookup_field='username',
-        many=True,
-        read_only=True
-    )
+class FollowSerializer(ModelSerializer):
+    # follows = HyperlinkedRelatedField(view_name='user_detail', many=True, read_only=True)
+    url = SerializerMethodField()
+    headimg = SerializerMethodField()
+    nickname = SerializerMethodField()
+    signature = SerializerMethodField()
+    sex = SerializerMethodField()
 
     class Meta:
         model = Follow
         fields = (
-            'follow',
+            'url',
+            'headimg',
+            'nickname',
+            'signature',
+            'sex',
         )
+
+    def get_url(self, obj):
+      #  print(obj.follows.headimg)
+        return reverse('user_detail', args=(obj.follows.id,))
+
+    def get_headimg(self, obj):
+        return obj.follows.get_headimg_url()
+
+    def get_nickname(self, obj):
+        return obj.follows.nickname
+
+    def get_signature(self, obj):
+        return obj.follows.signature
+
+    def get_sex(self, obj):
+        return obj.follows.sex
 
 
 # 粉丝返回信息
-class FansSerializer(HyperlinkedModelSerializer):
-    fans = HyperlinkedRelatedField(many=True, view_name='user_detail', read_only=True)
+class FansSerializer(ModelSerializer):
+    url = SerializerMethodField()
+    headimg = SerializerMethodField()
+    nickname = SerializerMethodField()
+    signature = SerializerMethodField()
+    sex = SerializerMethodField()
 
     class Meta:
         model = Follow
         fields = (
-            'fans',
+            #    'owner',
+            'url',
+            'headimg',
+            'nickname',
+            'signature',
+            'sex',
         )
 
+    def get_url(self, obj):
+        #  print(obj.follows.headimg)
+        return reverse('user_detail', args=(obj.fans.id,))
+
+    def get_headimg(self, obj):
+        return obj.fans.get_headimg_url()
+
+    def get_nickname(self, obj):
+        return obj.fans.nickname
+
+    def get_signature(self, obj):
+        return obj.fans.signature
+
+    def get_sex(self, obj):
+        return obj.fans.sex
 
 # 用户详情
 class UserDetailSerializer(ModelSerializer):
     # username = ReadOnlyField()
     headimg = ImageField(default='moren.jpeg')
-    # id = ReadOnlyField()
-    # last_time = ReadOnlyField()
-    # school_id = ReadOnlyField()
-    # real_name = ReadOnlyField()
-    # phone = ReadOnlyField()
-    books = HyperlinkedRelatedField(
-        many=True,
-        read_only=True,
-        view_name='book_detail'
-    )
+    bookNum = SerializerMethodField()
+    userId = IntegerField(source='id')
+    fansNum = SerializerMethodField()
+    followNum = SerializerMethodField()
 
     class Meta:
         model = LoginUser
         fields = (
             'headimg',
-            'id',
+            'userId',
             'last_time',
             'nickname',
             'username',
@@ -69,16 +109,20 @@ class UserDetailSerializer(ModelSerializer):
             'signature',
             'sex',
             'phone',
-            'books'
+            'bookNum',
+            'fansNum',
+            'followNum',
         )
-        read_only_fields = ('username', 'id', 'last_time', 'school_id', 'real_name', 'phone')
+        read_only_fields = ('username', 'userId', 'last_time', 'school_id', 'real_name', 'phone')
 
-    # def get_username(self, obj):
-    #     return obj.username
-    #
-    # def get_headimg(self, obj):
-    #     return obj.headimg
+    def get_fansNum(self, obj):
+        return obj.follows.all().count()
 
+    def get_followNum(self, obj):
+        return obj.fans.all().count()
+
+    def get_bookNum(self, obj):
+        return obj.books.all().count()
 
 # 用户登录创建
 class UserLoginSerializer(ModelSerializer):

@@ -1,4 +1,20 @@
 from django.contrib import admin
-from .models import Book
+from .models import Book, Food, FoodComment
 # Register your models here.
-admin.site.register(Book)
+
+
+class BookAdmin(admin.ModelAdmin):
+    list_display = ('name', 'place')
+
+
+class FoodAdmin(admin.ModelAdmin):
+    list_display = ('name',)
+
+
+class FoodCommentAdmin(admin.ModelAdmin):
+    list_display = ('content',)
+
+
+admin.site.register(Book, BookAdmin)
+admin.site.register(Food, FoodAdmin)
+admin.site.register(FoodComment, FoodCommentAdmin)
