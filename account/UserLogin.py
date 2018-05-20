@@ -27,8 +27,3 @@ def Userlogin(username, password):
         return False
 
 
-if __name__ == '__main__':
-   # x = logincheck(2016301500226,142510)
-     Userlogin(2016301500226, 142510)
-  #  print(x)
- #   print(x==True)
