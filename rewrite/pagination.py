@@ -18,10 +18,16 @@ class Pagination(PageNumberPagination):
     max_page_size = 10
 
     def get_paginated_response(self, data):
+        next = self.get_next_link()
+        previous = self.get_previous_link()
+        if next is None:
+            next = ""
+        if previous is None:
+            previous = ""
         return Response(OrderedDict([
             ('count', self.page.paginator.count),
-            ('next', self.get_next_link()),
-            ('previous', self.get_previous_link()),
+            ('next', next),
+            ('previous', previous),
             ('data', data),
             ('error', '0')
         ]))

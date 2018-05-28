@@ -35,7 +35,7 @@ class LoginUser(AbstractUser):
     # 昵称
     nickname = models.CharField(max_length=20, default=random_name(), verbose_name='nickname')
     # 头像
-    headimg = models.ImageField(default='moren.jpeg', upload_to=get_upload_to, verbose_name='headimg')
+    headimg = models.ImageField(default='user/moren.jpeg', upload_to=get_upload_to, verbose_name='headimg')
     # 签名
     signature = models.CharField(max_length=32, default='这个人很懒，啥也没有留下！', verbose_name='signature')
     # 首次登录时间
@@ -47,9 +47,9 @@ class LoginUser(AbstractUser):
     # 真实姓名
     real_name = models.CharField(max_length=16, verbose_name="real_name", default="WHUer")
     # 学号
-    school_id = models.CharField(max_length=13, verbose_name="school_id", null=True, unique=True)
+    school_id = models.CharField(max_length=13, verbose_name="school_id", default="", unique=True)
     # 手机
-    phone = models.CharField(max_length=11, null=True, verbose_name="phone")
+    phone = models.CharField(max_length=11, default="", verbose_name="phone")
 
     class Meta:
         db_table = 'LoginUser'

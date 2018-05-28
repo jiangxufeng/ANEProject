@@ -32,6 +32,9 @@ from .get_score import get_level
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 from rewrite.pagination import Pagination
+from rewrite.permissions import IsOwner
+from rest_framework.authtoken.models import Token
+from rewrite.permissions import get_authentication
 
 
 # 某一本图书详情
@@ -67,31 +70,21 @@ class UserBookListView(generics.ListAPIView):
     serializer_class = BookDetailSerializer
     pagination_class = Pagination
 
-    def get_object(self, user_id):
-        try:
-            return LoginUser.objects.get(id=user_id)
-        except LoginUser.DoesNotExist:
-            raise Http404
-
     def get_queryset(self):
-        user = self.get_object(user_id=self.kwargs['user_id'])
+        user = get_authentication(sign=self.request.META.get('HTTP_SIGN'), pk=self.kwargs['user_id'])
         queryset = Book.objects.filter(owner=user)
         return queryset.order_by('-create_at')
 
 
 # 发布图书信息
 class BookPublishView(APIView):
+    # permission_classes = (IsAuthenticated, IsOwner)
     permission_classes = (AllowAny,)
-    # authentication_classes = (ExpiringTokenAuthentication)
+    # authentication_classes = (ExpiringTokenAuthentication,)
     serializer_class = BookPublishSerializer
 
-    def get_user(self, user_id):
-        try:
-            return LoginUser.objects.get(id=user_id)
-        except LoginUser.DoesNotExist:
-            raise Http404
-
-    def post(self, request, user_id):
+    def post(self, request, pk):
+        user = get_authentication(sign=request.META.get("HTTP_SIGN"), pk=pk)
         serializer = BookPublishSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             name = serializer.validated_data['name']
@@ -101,8 +94,7 @@ class BookPublishView(APIView):
             image = serializer.validated_data['image']
             place = serializer.validated_data['place']
             level = get_level(name)
-            owner = self.get_user(user_id=user_id)
-            book = Book.objects.create(owner=owner, name=name, country=country, language=language, types=types,
+            book = Book.objects.create(owner=user, name=name, country=country, language=language, types=types,
                                        image=image, place=place, level=level)
             book.save()
             msg = Response({
@@ -200,21 +192,15 @@ class FoodCommentPublishView(APIView):
     # authentication_classes = (ExpiringTokenAuthentication,)
     serializer_class = FoodCommentPublishSerializer
 
-    def get_user(self, user_id):
-        try:
-            return LoginUser.objects.get(id=user_id)
-        except LoginUser.DoesNotExist:
-            raise Http404
-
     def get_shop(self, shop_id):
         try:
             return Food.objects.get(id=shop_id)
         except Food.DoesNotExist:
             raise Http404
 
-    def post(self, request, user_id, shop_id):
+    def post(self, request, pk, shop_id):
         serializer = FoodCommentPublishSerializer(data=request.data)
-        owner = self.get_user(user_id)
+        owner = get_authentication(sign=request.META.get("HTTP_SIGN"), pk=pk)
         shop = self.get_shop(shop_id)
         if serializer.is_valid(raise_exception=True):
             content = serializer.validated_data['content']
@@ -273,7 +259,7 @@ class GetShopCommentView(generics.ListAPIView):
         shop = self.get_shop(pk=self.kwargs['shop_id'])
         print(shop)
         queryset = FoodComment.objects.filter(food=shop)
-        return queryset.order_by('created_at')
+        return queryset.order_by('-created_at')
 
 
 

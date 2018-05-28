@@ -7,6 +7,7 @@ from rest_framework.serializers import (
     ModelSerializer,
     ImageField,
     IntegerField,
+    ReadOnlyField,
     ValidationError,
     HyperlinkedModelSerializer,
     HyperlinkedRelatedField,
@@ -87,12 +88,13 @@ class FansSerializer(ModelSerializer):
     def get_sex(self, obj):
         return obj.fans.sex
 
+
 # 用户详情
 class UserDetailSerializer(ModelSerializer):
     # username = ReadOnlyField()
     headimg = ImageField(default='moren.jpeg')
     bookNum = SerializerMethodField()
-    userId = IntegerField(source='id')
+    userId = ReadOnlyField(source='id')
     fansNum = SerializerMethodField()
     followNum = SerializerMethodField()
 
@@ -113,7 +115,7 @@ class UserDetailSerializer(ModelSerializer):
             'fansNum',
             'followNum',
         )
-        read_only_fields = ('username', 'userId', 'last_time', 'school_id', 'real_name', 'phone')
+        read_only_fields = ('username', 'last_time', 'school_id', 'real_name', 'phone')
 
     def get_fansNum(self, obj):
         return obj.follows.all().count()
@@ -123,6 +125,7 @@ class UserDetailSerializer(ModelSerializer):
 
     def get_bookNum(self, obj):
         return obj.books.all().count()
+
 
 # 用户登录创建
 class UserLoginSerializer(ModelSerializer):

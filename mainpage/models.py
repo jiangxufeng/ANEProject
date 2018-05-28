@@ -42,7 +42,7 @@ class Book(models.Model):
     # 图书名
     name = models.CharField(max_length=20, verbose_name='name')
     # 图书封面照片
-    image = models.ImageField(upload_to=get_book_upload_to, null=True, verbose_name='image')
+    image = models.ImageField(upload_to=get_book_upload_to, verbose_name='image')
     # 图书语言
     language = models.CharField(max_length=2, default='ch', choices=LANGUAGE_CHOICE, verbose_name='language')
     # 图书地界（国内或国外）
@@ -139,4 +139,3 @@ class FoodComment(models.Model):
 
     def description(self):
         return '%s评论了来自%s的美食' % (self.owner.nickname, self.food.name)
-#

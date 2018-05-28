@@ -35,7 +35,7 @@ class BookDetailSerializer(HyperlinkedModelSerializer):
 
 # 发布图书
 class BookPublishSerializer(ModelSerializer):
-    image = ImageField(allow_null=True)
+    image = ImageField(default="book/mask.png")
 
     class Meta:
         model = Book
@@ -44,7 +44,7 @@ class BookPublishSerializer(ModelSerializer):
 
 # 发布一个商家
 class ShopPublishSerializer(ModelSerializer):
-    image = ImageField(allow_null=True)
+    image = ImageField(default="book/mask.png")
 
     class Meta:
         model = Food

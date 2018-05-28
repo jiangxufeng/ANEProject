@@ -3,6 +3,15 @@
 # date: 2018-1-27
 from rest_framework import permissions
 from rest_framework.authtoken.models import Token
+import hashlib
+from account.models import LoginUser
+from django.http import Http404
+from rest_framework.exceptions import AuthenticationFailed
+from django.utils.translation import ugettext_lazy as _
+
+
+class MyAuthenticationFalied(AuthenticationFailed):
+    default_detail = _('Invalid token, Please login again.')
 
 
 # 是否为当前用户
@@ -15,8 +24,16 @@ class IsOwner(permissions.BasePermission):
         token = Token.objects.filter(key=key)
         if token is None:
             return False
-        # print(token[0].user.username)
-        # print(obj.username)
         return token[0].user.username == obj.username
 
 
+def get_authentication(sign, pk):
+    try:
+        user = LoginUser.objects.get(id=pk)
+        token = Token.objects.get(user=user).key
+        res = str(pk) + token
+        if hashlib.md5(res.encode()).hexdigest() == sign:
+            return user
+        raise MyAuthenticationFalied
+    except LoginUser.DoesNotExist:
+        raise Http404
