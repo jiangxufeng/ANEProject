@@ -1,8 +1,10 @@
 beautifulsoup4==4.6.0
+blueware-enterprise==1.2.0
 bs4==0.0.1
 certifi==2018.1.18
 chardet==3.0.4
 Django==1.11
+django-cors-headers==2.3.0
 django-filter==1.1.0
 django-filters==0.2.1
 django-qiniu-storage==2.3.1

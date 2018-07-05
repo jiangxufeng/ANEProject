@@ -17,10 +17,12 @@ from django.conf.urls import url, include
 from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
+from account.views import page_not_found
 
 urlpatterns = [
     url(r'^api/admin/', admin.site.urls),
-    url(r'^api/v1/auth/', include('account.urls')),
-    url(r'^api/v1/', include('mainpage.urls'))
-    #url(r'^docs/', include('rest_framework_docs.urls')),
+    url(r'^api/v1/users/', include('account.urls')),
+    url(r'^api/v1/', include('mainpage.urls')),
+    # url(r'^docs/', include('rest_framework_docs.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+handler404 = page_not_found

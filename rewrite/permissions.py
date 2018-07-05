@@ -6,12 +6,7 @@ from rest_framework.authtoken.models import Token
 import hashlib
 from account.models import LoginUser
 from django.http import Http404
-from rest_framework.exceptions import AuthenticationFailed
-from django.utils.translation import ugettext_lazy as _
-
-
-class MyAuthenticationFalied(AuthenticationFailed):
-    default_detail = _('Invalid token, Please login again.')
+from .exception import MyAuthenticationFailed, FoundUserFailed
 
 
 # 是否为当前用户
@@ -34,6 +29,6 @@ def get_authentication(sign, pk):
         res = str(pk) + token
         if hashlib.md5(res.encode()).hexdigest() == sign:
             return user
-        raise MyAuthenticationFalied
+        raise MyAuthenticationFailed
     except LoginUser.DoesNotExist:
-        raise Http404
+        raise FoundUserFailed

@@ -25,7 +25,7 @@ SECRET_KEY = '4*8ttqh18dlwa1c%ul6jp511p1j(=)^+-%_0zg^llpx95!92mg'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -43,11 +43,12 @@ INSTALLED_APPS = [
     'circle',
     'rest_framework',
     'rest_framework.authtoken',
-    'django_filters'
-    #'rest_framework_docs',
+    'django_filters',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -159,12 +160,49 @@ AUTH_USER_MODEL = 'account.LoginUser'
 
 #session失效时间
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/1.11/howto/static-files/
 
+QINIU_ACCESS_KEY = '7mn1axVj1LKGbSOpXI6RvqRkdI-zzzE2hnHwOK8I'
+QINIU_SECRET_KEY = '8AhoPQJH7U3GR-Cq_5slGVvzbXvF4P7F-P1Shhpv'
+QINIU_BUCKET_NAME = 'android'
+QINIU_BUCKET_DOMAIN = 'p9260z3xy.bkt.clouddn.com'
+QINIU_SECURE_URL = False
 
+DEFAULT_FILE_STORAGE = 'qiniustorage.backends.QiniuStorage'
+
+PREFIX_URL = 'http://'
 
 STATIC_URL = '/api/v1/static/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media').replace("\\", "/")
+MEDIA_URL = PREFIX_URL + QINIU_BUCKET_DOMAIN + '/media/'
 
-MEDIA_URL = '/api/v1/media/'
+# 跨域
+CORS_ALLOW_CREDENTIALS = True
+CORS_ORIGIN_ALLOW_ALL = True
+CORS_ORIGIN_WHITELIST = (
+    '*',
+)
+
+CORS_ALLOW_METHODS = (
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+    'VIEW',
+)
+
+CORS_ALLOW_HEADERS = (
+    'XMLHttpRequest',
+    'X_FILENAME',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'sign',
+    'x-csrftoken',
+    'x-requested-with',
+    'Pragma',
+)

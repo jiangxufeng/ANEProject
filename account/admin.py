@@ -1,6 +1,12 @@
 from django.contrib import admin
 from .models import LoginUser, Follow
 # Register your models here.
-admin.site.register(LoginUser)
+
+
+class LoginUserAdmin(admin.ModelAdmin):
+    list_display = ('id', 'username')
+
+
+admin.site.register(LoginUser, LoginUserAdmin)
 admin.site.register(Follow)
-#admin.site.register(Fans)
+# admin.site.register(Fans)

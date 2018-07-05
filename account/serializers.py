@@ -24,17 +24,27 @@ class FollowSerializer(ModelSerializer):
     headimg = SerializerMethodField()
     nickname = SerializerMethodField()
     signature = SerializerMethodField()
+    uid = SerializerMethodField()
     sex = SerializerMethodField()
+
+    @staticmethod
+    def setup_eager_loading(queryset):
+        queryset = queryset.select_related('follows')
+        return queryset
 
     class Meta:
         model = Follow
         fields = (
             'url',
+            'uid',
             'headimg',
             'nickname',
             'signature',
             'sex',
         )
+
+    def get_uid(self, obj):
+        return obj.follows.id
 
     def get_url(self, obj):
       #  print(obj.follows.headimg)
@@ -59,18 +69,28 @@ class FansSerializer(ModelSerializer):
     headimg = SerializerMethodField()
     nickname = SerializerMethodField()
     signature = SerializerMethodField()
+    uid = SerializerMethodField()
     sex = SerializerMethodField()
+
+    @staticmethod
+    def setup_eager_loading(queryset):
+        queryset = queryset.select_related('fans')
+        return queryset
 
     class Meta:
         model = Follow
         fields = (
             #    'owner',
             'url',
+            'uid',
             'headimg',
             'nickname',
             'signature',
             'sex',
         )
+
+    def get_uid(self, obj):
+        return obj.fans.id
 
     def get_url(self, obj):
         #  print(obj.follows.headimg)

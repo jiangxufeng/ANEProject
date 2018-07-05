@@ -7,14 +7,19 @@ from django.db.models import signals
 
 
 def get_book_upload_to(instance, filename):
-    user = instance.owner.username
     bookname = instance.name
-    return 'book/' + user + '-' + bookname + filename[-5:]
+    return 'books/' + bookname + '/' + filename
 
 
 def get_food_upload_to(instance, filename):
     name = instance.name
-    return 'food/' + name + '/' + filename[-5:]
+    return 'foods/' + name + '/' + filename
+
+
+def get_image_upload_to(instance, filename):
+    types = instance.types
+    owner = instance.owner
+    return 'images/' + str(types) + '/' + str(owner) + '/' + filename
 
 
 # 图书
@@ -139,3 +144,58 @@ class FoodComment(models.Model):
 
     def description(self):
         return '%s评论了来自%s的美食' % (self.owner.nickname, self.food.name)
+
+
+# 流浪猫狗信息
+class Animals(models.Model):
+    PLACE_CHOICE = (
+        ('1', '信息学部'),
+        ('2', '文理学部'),
+        ('3', '工学部'),
+        ('4', '医学部'),
+    )
+    # 地点
+    location = models.CharField(max_length=1, default='1', choices=PLACE_CHOICE, verbose_name='location')
+    # 标题
+    title = models.CharField(max_length=16, verbose_name='title')
+    # 介绍
+    content = models.CharField(max_length=114, verbose_name='content')
+
+    def __str__(self):
+        return self.title
+
+
+class AnimalSaveMsg(models.Model):
+    PLACE_CHOICE = (
+        ('1', '信息学部'),
+        ('2', '文理学部'),
+        ('3', '工学部'),
+        ('4', '医学部'),
+    )
+    # 地点
+    location = models.CharField(max_length=1, default='1', choices=PLACE_CHOICE, verbose_name='location')
+    # 联系电话
+    tel = models.CharField(max_length=149, verbose_name='telephone')
+    # 救助群
+    groupChat = models.CharField(max_length=149, verbose_name='groupChat')
+
+    def __str__(self):
+        return self.location
+
+
+class Images(models.Model):
+    TYPE_CHOICE = (
+        ('1', '图书'),
+        ('2', '商店'),
+        ('3', '动物信息'),
+    )
+    # 类型
+    types = models.CharField(max_length=1, default='1', choices=TYPE_CHOICE, verbose_name='types')
+    # 所属对象id
+    owner = models.IntegerField(default=1, verbose_name='ownerId')
+    # 图片
+    image = models.ImageField(upload_to=get_image_upload_to, verbose_name='images', null=False)
+
+    def __str__(self):
+        return self.image
+

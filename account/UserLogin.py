@@ -1,5 +1,5 @@
 import requests
-
+from rewrite.exception import ServerWrong
 
 headers = {
     'Connection': 'keep-alive',
@@ -18,7 +18,10 @@ def Userlogin(username, password):
         'https': None,
     }
     content = requests.get(url3, headers=headers, proxies=proxy).json()
-    result = content['status']
+    try:
+        result = content['status']
+    except KeyError:
+        raise ServerWrong
     if result == 'success':
         url_2 = 'http://seat.lib.whu.edu.cn/rest/v2/user?token=%s' % (content['data']['token'])
         json_2 = requests.get(url_2, headers=headers, proxies=proxy).json()

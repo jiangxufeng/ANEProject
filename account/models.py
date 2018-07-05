@@ -23,7 +23,7 @@ def random_name():
 # 上传路径
 def get_upload_to(instance, filename):
     user = str(instance.id)
-    return user + '-' + 'headimg' + filename[-5:]
+    return 'user/' + user + '-' + 'headimg' + filename[-5:]
 
 
 # 用户资料

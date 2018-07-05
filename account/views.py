@@ -1,7 +1,8 @@
 # -*- coding:utf-8 -*-
-# author: JXF
-# date: 2018-1-24
+# author: jiangxf
+# updated: 2018-07-02
 
+from django.shortcuts import render
 from django.http import Http404
 from rest_framework.views import APIView
 from rest_framework.status import (
@@ -37,6 +38,7 @@ from rewrite.pagination import Pagination
 from django.conf import settings
 from rest_framework.authtoken.models import Token
 from rewrite.permissions import get_authentication
+from rewrite.exception import FoundUserFailed, WrongUsernameOrPwd, FollowAuthenticationFailed
 
 #EXPIRE_MINUTES = getattr(settings, 'REST_FRAMEWORK_TOKEN_EXPIRE_MINUTES', 1)
 
@@ -45,12 +47,10 @@ from rewrite.permissions import get_authentication
 class UserLoginView(APIView):
     serializer_class = UserLoginSerializer
     permission_classes = [AllowAny]
-    #authentication_classes = (SessionAuthentication, BasicAuthentication)
     authentication_classes = (ExpiringTokenAuthentication,)
 
     def post(self, request):
         serializer = UserLoginSerializer(data=request.data)
-       # print(request.META.get("HTTP_ACCEPT"))
         if serializer.is_valid(raise_exception=True):
             username = serializer.validated_data['username']
             password = serializer.validated_data['password']
@@ -62,12 +62,7 @@ class UserLoginView(APIView):
                     user.save()
                     return Response(content, HTTP_200_OK)
                 else:
-                    content = {
-                        'error': "1",
-                        'data': '',
-                        'err_msg': 'Incorrect username or password',
-                    }
-                    return Response(content, HTTP_200_OK)
+                    raise WrongUsernameOrPwd
             else:
                 result = Userlogin(username, password)
                 if result:
@@ -77,12 +72,7 @@ class UserLoginView(APIView):
                     content = expire_token(user)
                     return Response(content, HTTP_201_CREATED)
                 else:
-                    content = {
-                        'error': "1",
-                        'data': '',
-                        'err_msg': 'Incorrect username or password',
-                    }
-                    return Response(content, HTTP_200_OK)
+                    raise WrongUsernameOrPwd
 
 
 # 获取用户信息
@@ -103,13 +93,9 @@ class UserDetailView(mixins.RetrieveModelMixin,
             msg = Response(data={
                 'error': '0',
                 'data': cont.data,
-            }, status=HTTP_200_OK, headers={'Allow': "as"})
+            }, status=HTTP_200_OK)
         except Http404:    # 获取失败，没有找到对应数据
-            msg = Response({
-                'error': '1',
-                'error_msg': 'Not found the user',
-                'data': ''
-            }, HTTP_404_NOT_FOUND)
+            raise FoundUserFailed
         return msg
 
 
@@ -119,33 +105,39 @@ class UserChangeInfoView(mixins.UpdateModelMixin,
     permission_classes = (AllowAny,)
     serializer_class = UserDetailSerializer
 
-    def put(self, request, pk):
-        user = get_authentication(sign=request.META.get("HTTP_SIGN"), pk=pk)
-        if user:
-            serializer = UserDetailSerializer(data=request.data)
-            if serializer.is_valid(raise_exception=True):
-                nickname = serializer.validated_data['nickname']
-                headimg = serializer.validated_data['headimg']
-                signature = serializer.validated_data['signature']
-                sex = serializer.validated_data['sex']
-                user.nickname = nickname
-                user.headimg = headimg
-                user.signature = signature
-                user.sex = sex
-                user.save()
-                msg = Response(HTTP_204_NO_CONTENT)
-            else:
-                msg = Response({
-                    'error': '1',
-                    'data': '',
-                    'error_msg': 'Failed to update the information',
-                })
-            return msg
-        else:
-            return Response({
-                'error': '1',
-                'error_msg': 'Invalid token, Please login again'
-            }, HTTP_400_BAD_REQUEST)
+    def get_object(self):
+        return get_authentication(sign=self.request.META.get('HTTP_SIGN'), pk=self.kwargs['pk'])
+
+    def put(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
+
+    # def put(self, request, pk):
+    #     user = get_authentication(sign=request.META.get("HTTP_SIGN"), pk=pk)
+    #     if user:
+    #         serializer = UserDetailSerializer(data=request.data, partial=True)
+    #         if serializer.is_valid(raise_exception=True):
+    #             nickname = serializer.validated_data['nickname']
+    #             headimg = serializer.validated_data['headimg']
+    #             signature = serializer.validated_data['signature']
+    #             sex = serializer.validated_data['sex']
+    #             user.nickname = nickname
+    #             user.headimg = headimg
+    #             user.signature = signature
+    #             user.sex = sex
+    #             user.save(update_fields=['nickname', 'headimg', 'signature', 'sex'])
+    #             msg = Response(HTTP_204_NO_CONTENT)
+    #         else:
+    #             msg = Response({
+    #                 'error': '1',
+    #                 'data': '',
+    #                 'error_msg': 'Failed to update the information',
+    #             })
+    #         return msg
+    #     else:
+    #         return Response({
+    #             'error': '1',
+    #             'error_msg': 'Invalid token, Please login again'
+    #         }, HTTP_400_BAD_REQUEST)
 
 
 # 修改密码
@@ -197,18 +189,13 @@ class UserBindPhoneView(APIView):
             phone = serializer.validated_data['phone']
             try:
                 user.phone = phone
-                user.save()
-                msg = Response(HTTP_204_NO_CONTENT)
+                user.save(update_fields=['phone'])
+                msg = Response(status=HTTP_204_NO_CONTENT)
             except Http404:
-                msg = Response({
-                    'error': '1',
-                    'data': '',
-                    'error_msg': 'Not found the user'
-                }, HTTP_404_NOT_FOUND)
+                raise FoundUserFailed
             except:
                 msg = Response({
-                    'error': '1',
-                    'data': '',
+                    'error': 90500,
                     'error_msg': 'Failed to change password'
                 }, HTTP_400_BAD_REQUEST)
             return msg
@@ -224,11 +211,7 @@ class UserBindPhoneView(APIView):
                 'message': 'unbind phone successfully'
             }, HTTP_200_OK)
         except Http404:
-            msg = Response({
-                'error': '1',
-                'data': '',
-                'error_msg': 'Not found the user'
-            }, HTTP_404_NOT_FOUND)
+            raise FoundUserFailed
         return msg
 
 
@@ -243,22 +226,13 @@ class MakeFriendView(APIView):
 
     def get(self, request, idol, pk):
         if self.is_same(idol, pk):
-            msg = Response({
-                'error': '1',
-                'data': '',
-                'error_msg': "You can't follow yourself.It's invalid"
-            }, HTTP_404_NOT_FOUND)
+            raise FollowAuthenticationFailed
         else:
             try:
                 fan = get_authentication(sign=request.META.get("HTTP_SIGN"), pk=pk)
                 idols = LoginUser.objects.get(pk=idol)
             except LoginUser.DoesNotExist:
-                msg = Response({
-                    'error': '1',
-                    'data': '',
-                    'error_msg': 'Not found the user'
-                }, HTTP_404_NOT_FOUND)
-                return msg
+                raise FoundUserFailed
             follow = Follow.objects.create(follows=idols, fans=fan)
             follow.save()
             msg = Response({
@@ -274,12 +248,7 @@ class MakeFriendView(APIView):
             idol = LoginUser.objects.get(pk=idol)
             follow = Follow.objects.get(fans=fans, follows=idol)
         except LoginUser.DoesNotExist:
-            msg = Response({
-                'error': '1',
-                'data': '',
-                'error_msg': 'Not found the user'
-            }, HTTP_404_NOT_FOUND)
-            return msg
+            raise FoundUserFailed
         follow.delete()
         msg = Response({
             'error': '0',
@@ -290,7 +259,6 @@ class MakeFriendView(APIView):
 
 
 # 获取关注的人
-
 class GetFollowView(generics.ListAPIView):
     # permission_classes = (IsAuthenticated, IsOwner)
     permission_classes = (AllowAny,)
@@ -301,7 +269,8 @@ class GetFollowView(generics.ListAPIView):
     def get_queryset(self):
         owner = get_authentication(sign=self.request.META.get("HTTP_SIGN"), pk=self.kwargs['pk'])
         queryset = Follow.objects.filter(fans=owner)
-        return queryset
+        queryset = self.get_serializer().setup_eager_loading(queryset)
+        return queryset.order_by('id')
 
 
 # 获取粉丝列表
@@ -317,7 +286,9 @@ class GetFansView(generics.ListAPIView):
         return queryset
 
 
-
+# 404处理信息
+def page_not_found(request):
+    return render(request, '404.json')
 
 
 

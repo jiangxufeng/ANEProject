@@ -5,7 +5,6 @@ from django.conf import settings
 from rest_framework.authentication import TokenAuthentication
 from rest_framework import exceptions
 from django.utils.translation import ugettext_lazy as _
-from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 
 from django.core.cache import cache

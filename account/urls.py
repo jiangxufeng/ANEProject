@@ -17,11 +17,11 @@ from .views import (
 
 urlpatterns = [
     url(r'^login/$', UserLoginView.as_view(), name='user_login'),
-    url(r'^detail/(?P<pk>\d+)/$', UserDetailView.as_view(), name='user_detail'),
+    url(r'^(?P<pk>\d+)/$', UserDetailView.as_view(), name='user_detail'),
     url(r'^(?P<pk>\d+)/changeInfo/$', UserChangeInfoView.as_view(), name='change_info'),
     url(r'^(?P<pk>\d+)/resetPassword/$', UserResetPasswordView.as_view(), name='reset_password'),
     url(r'^(?P<pk>\d+)/phone/$', UserBindPhoneView.as_view(), name='bind_phone'),
-    url(r'^(?P<pk>\d+)/follows/(?P<idol>\d+)/$', MakeFriendView.as_view(), name='make_friend'),
-    url(r'^getFollow/(?P<pk>\d+)/$', GetFollowView.as_view(), name='get_follow'),
-    url(r'^getFans/(?P<pk>\d+)/$', GetFansView.as_view(), name='get_fans'),
+    url(r'^(?P<pk>\d+)/follow/(?P<idol>\d+)/$', MakeFriendView.as_view(), name='make_friend'),
+    url(r'^(?P<pk>\d+)/follows$', GetFollowView.as_view(), name='get_follow'),
+    url(r'^(?P<pk>\d+)/fans$', GetFansView.as_view(), name='get_fans'),
 ]
