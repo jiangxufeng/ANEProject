@@ -12,12 +12,16 @@ from rest_framework.status import (
 from .serializers import (
     BookDetailSerializer,
     BookPublishSerializer,
+    BookListSerializer,
     ShopPublishSerializer,
     FoodCommentPublishSerializer,
     FoodCommentDetailSerializer,
     ShopDetailSerializer,
+    ShopListSerializer,
     UploadImageSerializer,
-    UploadImageDetailSerializer,
+    AnimalMsgPublishSerializer,
+    AnimalMsgDetailSerializer,
+    AnimalMsgListSerializer,
 )
 from .models import Book, Food, FoodComment, AnimalSaveMsg, Images, Animals
 from rest_framework.views import APIView
@@ -37,6 +41,14 @@ from rewrite.permissions import IsOwner
 from rest_framework.authtoken.models import Token
 from rewrite.permissions import get_authentication
 from rest_framework.exceptions import APIException
+from rewrite.exception import (
+    FoundBookFailed,
+    FoundCommentFailed,
+    FoundShopFailed,
+    FoundAnimalFailed,
+    ParamsInvalid,
+)
+
 
 # 发布图书信息
 class BookPublishView(APIView):
@@ -68,10 +80,10 @@ class BookPublishView(APIView):
 
 
 # 获取全部图书并展示
-class GetAllBookView(generics.ListAPIView):
+class BookListView(generics.ListAPIView):
     permission_classes = (AllowAny,)
     # authentication_classes = (ExpiringTokenAuthentication)
-    serializer_class = BookDetailSerializer
+    serializer_class = BookListSerializer
     pagination_class = Pagination
     filter_backends = (DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter)
     # 筛选图书，筛选条件：交换状态、地点、作者国家、语言、类型
@@ -82,7 +94,7 @@ class GetAllBookView(generics.ListAPIView):
     def get_queryset(self):
         queryset = Book.objects.all()
         queryset = self.get_serializer_class().setup_eager_loading(queryset)
-        return queryset.order_by('-create_at')
+        return queryset.order_by('-created_at')
 
 
 # 某一本图书详情
@@ -101,12 +113,9 @@ class BookDetailView(mixins.RetrieveModelMixin,
                 'data': cont.data,
             }, status=HTTP_200_OK)
         except Http404:  # 获取失败，没有找到对应数据
-            msg = Response({
-                'error': '1',
-                'error_msg': 'Not found the book',
-                'data': ''
-            }, HTTP_404_NOT_FOUND)
-        return msg
+            raise FoundBookFailed
+        else:
+            return msg
 
 
 # 获取当前用户在平台上发布交换的图书
@@ -155,7 +164,6 @@ class ShopDetailView(mixins.RetrieveModelMixin,
     serializer_class = ShopDetailSerializer
     queryset = Food.objects.all()
 
-
     def get(self, request, *args, **kwargs):
         try:
             cont = self.retrieve(request, *args, **kwargs)
@@ -164,11 +172,7 @@ class ShopDetailView(mixins.RetrieveModelMixin,
                 'data': cont.data,
             }, status=HTTP_200_OK)
         except Http404:  # 获取失败，没有找到对应数据
-            msg = Response({
-                'error': '1',
-                'error_msg': 'Not found the shop',
-                'data': ''
-            }, HTTP_404_NOT_FOUND)
+           raise FoundShopFailed
         return msg
 
 
@@ -176,7 +180,7 @@ class ShopDetailView(mixins.RetrieveModelMixin,
 class GetAllShopView(generics.ListAPIView):
     permission_classes = (AllowAny,)
     # authentication_classes = (ExpiringTokenAuthentication)
-    serializer_class = ShopDetailSerializer
+    serializer_class = ShopListSerializer
     pagination_class = Pagination
     filter_backends = (DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter)
     # 筛选商家：信息学部、文理学部......
@@ -199,7 +203,7 @@ class FoodCommentPublishView(APIView):
         try:
             return Food.objects.get(id=shop_id)
         except Food.DoesNotExist:
-            raise APIException("Not found the shop")
+            raise FoundShopFailed
 
     def post(self, request, pk, shop_id):
         serializer = FoodCommentPublishSerializer(data=request.data)
@@ -238,12 +242,9 @@ class FoodCommentDetailView(mixins.RetrieveModelMixin,
                 'data': cont.data,
             }, status=HTTP_200_OK)
         except Http404:  # 获取失败，没有找到对应数据
-            msg = Response({
-                'error': '1',
-                'error_msg': 'Not found the comment',
-                'data': ''
-            }, HTTP_404_NOT_FOUND)
-        return msg
+            raise FoundCommentFailed
+        else:
+            return msg
 
 
 # 获取对某个商家的全部评价，或者发布对某商家的评价
@@ -271,19 +272,94 @@ class UploadImagesView(APIView):
     permission_classes = (AllowAny,)
     serializer_class = UploadImageSerializer
 
-    def post(self, request, pk):
+    def get_model(self, bid, sid, aid):
+        if bid != '0':
+            try:
+                return Book.objects.get(id=bid), None, None
+            except Book.DoesNotExist:
+                raise FoundBookFailed
+        elif sid != '0':
+            try:
+                return None, Food.objects.get(id=sid), None
+            except Food.DoesNotExist:
+                raise FoundShopFailed
+        elif aid != '0':
+            try:
+                return None, None, Animals.objects.get(id=aid)
+            except Animals.DoesNotExist:
+                raise FoundAnimalFailed
+        else:
+            raise ParamsInvalid
+
+    def post(self, request, bid, sid, aid):
         serializer = UploadImageSerializer(data=request.data)
-        owner = get_authentication(sign=request.META.get("HTTP_SIGN"), pk=pk).id
         if serializer.is_valid(raise_exception=True):
-            types = serializer.validated_data['types']
+            book, shop, animal = self.get_model(bid, sid, aid)
             image = serializer.validated_data['image']
-            img = Images.objects.create(types=types, owner=owner, image=image)
+            img = Images.objects.create(bookOwner=book, shopOwner=shop, animalOwner=animal, image=image)
             img.save()
             msg = Response({
                 'error': 0,
-                'data': UploadImageDetailSerializer(img, context={'request': request}).data,
-                'message': 'Successfully to upload the image.'
+                'data': {"bookOwner": bid, "shopOwner": sid, "animalOwner": aid, "image": img.get_img_url()},
+                'message': 'Success to upload the image.'
             }, HTTP_201_CREATED)
             return msg
 
 
+# 发布流浪猫狗信息
+class AnimalsMsgPublishView(APIView):
+    permission_classes = (AllowAny,)
+    serializer_class = AnimalMsgPublishSerializer
+
+    def post(self, request, pk):
+        author = get_authentication(sign=request.META.get('HTTP_SIGN'), pk=pk)
+        serializer = AnimalMsgPublishSerializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            title = serializer.validated_data['title']
+            content = serializer.validated_data['content']
+            location = serializer.validated_data['location']
+            animalMsg = Animals.objects.create(location=location, title=title, author=author, content=content)
+            animalMsg.save()
+            msg = Response({
+                'error': 0,
+                'data': AnimalMsgDetailSerializer(animalMsg, context={'request': request}).data,
+                'message': 'Success to publish the message.'
+            }, HTTP_201_CREATED)
+            return msg
+
+
+# 流浪猫狗具体详情
+class AnimalsMsgDetailView(mixins.RetrieveModelMixin,
+                           generics.GenericAPIView):
+    permission_classes = (AllowAny,)
+    # authentication_classes = (ExpiringTokenAuthentication)
+    serializer_class = AnimalMsgDetailSerializer
+    queryset = Animals.objects.all()
+
+    def get(self, request, *args, **kwargs):
+        try:
+            cont = self.retrieve(request, *args, **kwargs)
+            msg = Response(data={
+                'error': 0,
+                'data': cont.data,
+            }, status=HTTP_200_OK)
+        except Http404:  # 获取失败，没有找到对应数据
+            raise FoundAnimalFailed
+        else:
+            return msg
+
+
+# 获取所有的流浪猫狗信息
+class AnimalsMsgListView(generics.ListAPIView):
+    permission_classes = (AllowAny,)
+    # authentication_classes = (ExpiringTokenAuthentication)
+    serializer_class = AnimalMsgListSerializer
+    pagination_class = Pagination
+    filter_backends = (DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter)
+    # 筛选商家：信息学部、文理学部......
+    filter_fields = ('location', )
+    search_fields = ('title',)
+
+    def get_queryset(self):
+        queryset = Animals.objects.all()
+        return queryset.order_by('-created_at')

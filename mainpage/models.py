@@ -17,9 +17,30 @@ def get_food_upload_to(instance, filename):
 
 
 def get_image_upload_to(instance, filename):
-    types = instance.types
-    owner = instance.owner
-    return 'images/' + str(types) + '/' + str(owner) + '/' + filename
+    #choice = instance.types
+    #owner = instance.owner
+    #types = {'1': 'books', '2': 'shops', '3': 'animals'}
+    # try:
+    #     owner = instance.bookOwner.id
+    #     types = 'books'
+    # except:
+    #     try:
+    #         owner = instance.shopOwner.id
+    #         types = 'shops'
+    #     except:
+    #         owner = instance.animalOwner.id
+    #         types = 'animals'
+    if instance.bookOwner:
+        types = 'books'
+        owner = instance.bookOwner.id
+    elif instance.shopOwner:
+        types = 'shops'
+        owner = instance.shopOwner.id
+    else:
+        types = 'animals'
+        owner = instance.animalOwner.id
+
+    return 'images/' + types + '/' + str(owner) + '/' + filename
 
 
 # 图书
@@ -61,7 +82,7 @@ class Book(models.Model):
     # 消息通知
     notice = fields.GenericRelation(Notice)
     # 创建时间
-    create_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
     # 最后一次更改时间
     updated_at = models.DateTimeField(auto_now=True)
     # 交换状态
@@ -156,10 +177,14 @@ class Animals(models.Model):
     )
     # 地点
     location = models.CharField(max_length=1, default='1', choices=PLACE_CHOICE, verbose_name='location')
+    # 作者(发布者)
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='animalsAuthor')
     # 标题
     title = models.CharField(max_length=16, verbose_name='title')
     # 介绍
     content = models.CharField(max_length=114, verbose_name='content')
+    # 创建时间
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.title
@@ -184,18 +209,18 @@ class AnimalSaveMsg(models.Model):
 
 
 class Images(models.Model):
-    TYPE_CHOICE = (
-        ('1', '图书'),
-        ('2', '商店'),
-        ('3', '动物信息'),
-    )
-    # 类型
-    types = models.CharField(max_length=1, default='1', choices=TYPE_CHOICE, verbose_name='types')
-    # 所属对象id
-    owner = models.IntegerField(default=1, verbose_name='ownerId')
+    # 图书所有者
+    bookOwner = models.ForeignKey(Book, related_name="BookImages", null=True)
+    # 商家所有者
+    shopOwner = models.ForeignKey(Food, related_name="ShopImages", null=True)
+    # 流浪猫狗所有者
+    animalOwner = models.ForeignKey(Animals, related_name="AnimalImages", null=True)
     # 图片
     image = models.ImageField(upload_to=get_image_upload_to, verbose_name='images', null=False)
 
     def __str__(self):
         return self.image
+
+    def get_img_url(self):
+        return 'http://p9260z3xy.bkt.clouddn.com/' + str(self.image)
 
