@@ -14,7 +14,7 @@ class Notice(models.Model):
     object_id = models.PositiveIntegerField()
     event = fields.GenericForeignKey('content_type', 'object_id')
     status = models.BooleanField(default=False)  # 是否阅读
-    type = models.IntegerField()  # 通知类型 0:评论 1:好友或系统消息 2:好友申请
+    type = models.IntegerField()  # 通知类型 0:评论帖子 1:关注信息 2:图书交换请求 3:流浪动物评论 4:帖子点赞
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -27,6 +27,7 @@ class Notice(models.Model):
         return "%s的事件: %s" % (self.sender, self.description())
 
     def description(self):
+        print(self.event)
         if self.event:
             return self.event.description()
         return "No Event"
