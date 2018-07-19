@@ -8,7 +8,15 @@ from django.utils.translation import ugettext_lazy as _
 
 def custom_exception_handler(exc, context):
     response = exception_handler(exc, context)
-    print(response.data)
+    try:
+        temp_dict = eval(str(response.data))
+        keys = list(temp_dict.keys())
+        temp_values = []
+        for i in keys:
+            temp_values.append(temp_dict[i][0])
+    except AttributeError:
+        code = 90002
+        detail = "asdadas"
     try:
         code = int(response.data['detail'][:5])
         detail = response.data['detail'][5:]
@@ -16,16 +24,34 @@ def custom_exception_handler(exc, context):
         code = 90001
         detail = response.data['detail']
     except KeyError:
+        if "This field may not be blank." in set(temp_values):
+            code = 70001
+            detail = 'Invalid params'
+            response.data.clear()
         # 商家评价评分不在0-5之间
-        if 'score' in response.data:
+        elif 'score' in response.data:
             code = 30008
             detail = response.data['score'][0]
             del response.data['score']
         # 手机号码格式不正确
-        elif 'phone' in response.date:
+        elif 'phone' in response.data:
             code = 20004
             detail = response.data['phone'][0]
             del response.data['phone']
+        elif 'title' in response.data:
+            code = 30008
+            detail = response.data['title'][0]
+            del response.data['title']
+        elif 'location' in response.data:
+            code = 30009
+            detail = response.data['location'][0]
+            del response.data['location']
+        else:
+            code = 90003
+            detail = 'werwrwe'
+    except:
+        code = 90004
+        detail = 'werwrwe'
 
     if response is not None:
         response.data['error'] = code
@@ -51,7 +77,7 @@ class MyAuthenticationFailed(AuthenticationFailed):
 
 # 关注的用户为自己
 class FollowAuthenticationFailed(APIException):
-    default_detail = _("20005You can't follow yourself.It's invalid")
+    default_detail = _("20005You can't follow yourself.It's invalid.")
     status_code = 200
 
 
@@ -61,12 +87,69 @@ class FoundUserFailed(APIException):
     status_code = 404
 
 
+# 密码未修改
+class PasswordIsSame(APIException):
+    default_detail = _("20006The new password is same to the old password.")
+    status_code = 400
+
+
 # 服务器故障500
 class ServerWrong(APIException):
     default_detail = _("90500Server wrong.")
     status_code = 500
 
 
+# 图书不存在
+class FoundBookFailed(APIException):
+    default_detail = _("30001Not found the book.")
+    status_code = 404
 
+
+# 商家不存在
+class FoundShopFailed(APIException):
+    default_detail = _("30002Not found the shop.")
+    status_code = 404
+
+
+# 评论不存在
+class FoundCommentFailed(APIException):
+    default_detail = _("30003Not found the comment.")
+    status_code = 404
+
+
+# 流浪猫狗信息不存在
+class FoundAnimalFailed(APIException):
+    default_detail = _("30004Not found the animal message.")
+    status_code = 404
+
+
+# 参数错误
+class ParamsInvalid(APIException):
+    default_detail = _("70001Invalid params.")
+    status_code = 400
+
+
+# 帖子不存在
+class FoundPostFailed(APIException):
+    default_detail = _("40001Not found the post.")
+    status_code = 404
+
+
+# 该用户已点赞
+class UserLikedPost(APIException):
+    default_detail = _("40007The user has liked the post.")
+    status_code = 400
+
+
+# 点赞不存在
+class FoundLikeFailed(APIException):
+    default_detail = _("40008Not found the like of the post.")
+    status_code = 404
+
+
+# 消息通知不存在
+class FoundNoticeFailed(APIException):
+    default_detail = _("50001Not found the notice.")
+    status_code = 404
 
 

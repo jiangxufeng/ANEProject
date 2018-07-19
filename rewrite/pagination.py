@@ -10,7 +10,7 @@ from rest_framework.response import Response
 # 分页处理
 class Pagination(PageNumberPagination):
     # 默认每页显示数据条数
-    page_size = 8
+    page_size = 6
     # 获取url参数中设置的每页显示数据条数
     page_size_query_param = 'size'
     # 获取url中传入的页码

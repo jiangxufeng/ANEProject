@@ -5,7 +5,6 @@ from rest_framework import permissions
 from rest_framework.authtoken.models import Token
 import hashlib
 from account.models import LoginUser
-from django.http import Http404
 from .exception import MyAuthenticationFailed, FoundUserFailed
 
 
@@ -28,6 +27,7 @@ def get_authentication(sign, pk):
         token = Token.objects.get(user=user).key
         res = str(pk) + token
         if hashlib.md5(res.encode()).hexdigest() == sign:
+            user.save()
             return user
         raise MyAuthenticationFailed
     except LoginUser.DoesNotExist:
