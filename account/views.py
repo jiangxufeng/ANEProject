@@ -38,7 +38,7 @@ from rewrite.pagination import Pagination
 from django.conf import settings
 from rest_framework.authtoken.models import Token
 from rewrite.permissions import get_authentication
-from rewrite.exception import FoundUserFailed, WrongUsernameOrPwd, FollowAuthenticationFailed
+from rewrite.exception import FoundUserFailed, WrongUsernameOrPwd, FollowAuthenticationFailed, PasswordIsSame
 
 #EXPIRE_MINUTES = getattr(settings, 'REST_FRAMEWORK_TOKEN_EXPIRE_MINUTES', 1)
 
@@ -54,6 +54,8 @@ class UserLoginView(APIView):
         if serializer.is_valid(raise_exception=True):
             username = serializer.validated_data['username']
             password = serializer.validated_data['password']
+            #  username = request.GET.get('username', '')
+            #  password = request.GET.get('password', '')
             in_database = LoginUser.objects.filter(username=username)
             if in_database:
                 user = authenticate(username=username, password=password)
@@ -80,18 +82,19 @@ class UserDetailView(mixins.RetrieveModelMixin,
                      generics.GenericAPIView):
 
     # 该权限为当前登录用户只能获取自己信息
-    permission_classes = (IsAuthenticated,)
-    #permission_classes = (IsAuthenticated,)
+    permission_classes = (AllowAny,)
+    # permission_classes = (IsAuthenticated,)
     authentication_classes = (ExpiringTokenAuthentication,)
     # permission_classes = (AllowAny, )
-    queryset = LoginUser.objects.all()
+    # queryset = LoginUser.objects.all()
     serializer_class = UserDetailSerializer
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, pk):
+        user = get_authentication(sign=request.META.get('HTTP_SIGN'), pk=pk)
         try:
-            cont = self.retrieve(request, *args, **kwargs)
+            cont = UserDetailSerializer(user)
             msg = Response(data={
-                'error': '0',
+                'error': 0,
                 'data': cont.data,
             }, status=HTTP_200_OK)
         except Http404:    # 获取失败，没有找到对应数据
@@ -152,27 +155,24 @@ class UserResetPasswordView(APIView):
         serializer = UserPasswordResetSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             new_password = serializer.validated_data['password']
-            try:
-                user.set_password(new_password)
-                user.save()
-                msg = {
-                    'error': '0',
-                    'data': '',
-                    'message': 'Success to change password'
-                }
-            except:
-                msg = {
-                    'error': '1',
-                    'data': '',
-                    'error_msg': 'Failed to change password'
-                }
-            return Response(msg, HTTP_200_OK)
-        msg = {
-            'error': '1',
-            'data': '',
-            'error_msg': 'The data is invalid'
-        }
-        return Response(msg, HTTP_400_BAD_REQUEST)
+            if user.check_password(new_password):
+                raise PasswordIsSame
+            else:
+                try:
+                    user.set_password(new_password)
+                    user.save()
+                    msg = {
+                        'error': 0,
+                        'data': '',
+                        'message': 'Success to change password'
+                    }
+                except:
+                    msg = {
+                        'error': '1',
+                        'data': '',
+                        'error_msg': 'Failed to change password'
+                    }
+                return Response(msg, HTTP_200_OK)
 
 
 # 绑定手机与解绑
@@ -206,7 +206,7 @@ class UserBindPhoneView(APIView):
             user.phone = ''
             user.save()
             msg = Response({
-                'error': '0',
+                'error': 0,
                 'data': '',
                 'message': 'unbind phone successfully'
             }, HTTP_200_OK)
@@ -236,7 +236,7 @@ class MakeFriendView(APIView):
             follow = Follow.objects.create(follows=idols, fans=fan)
             follow.save()
             msg = Response({
-                'error': '0',
+                'error': 0,
                 'data': '',
                 'message': 'Pay attention to the user successfully'
             }, HTTP_200_OK)
@@ -251,7 +251,7 @@ class MakeFriendView(APIView):
             raise FoundUserFailed
         follow.delete()
         msg = Response({
-            'error': '0',
+            'error': 0,
             'data': '',
             'message': 'Unfollow the user successfully'
         }, HTTP_200_OK)

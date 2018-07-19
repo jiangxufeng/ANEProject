@@ -114,15 +114,16 @@ class UserDetailSerializer(ModelSerializer):
     # username = ReadOnlyField()
     headimg = ImageField(default='moren.jpeg')
     bookNum = SerializerMethodField()
-    userId = ReadOnlyField(source='id')
+    uid = ReadOnlyField(source='id')
     fansNum = SerializerMethodField()
     followNum = SerializerMethodField()
+    noticeNum = SerializerMethodField()
 
     class Meta:
         model = LoginUser
         fields = (
             'headimg',
-            'userId',
+            'uid',
             'last_time',
             'nickname',
             'username',
@@ -134,6 +135,7 @@ class UserDetailSerializer(ModelSerializer):
             'bookNum',
             'fansNum',
             'followNum',
+            'noticeNum',
         )
         read_only_fields = ('username', 'last_time', 'school_id', 'real_name', 'phone')
 
@@ -145,6 +147,9 @@ class UserDetailSerializer(ModelSerializer):
 
     def get_bookNum(self, obj):
         return obj.books.all().count()
+
+    def get_noticeNum(self, obj):
+        return obj.notice_receiver.filter(status=False).count()
 
 
 # 用户登录创建

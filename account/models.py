@@ -23,7 +23,7 @@ def random_name():
 # 上传路径
 def get_upload_to(instance, filename):
     user = str(instance.id)
-    return 'user/' + user + '-' + 'headimg' + filename[-5:]
+    return 'users/' + user + '-' + 'headimg' + filename[-5:]
 
 
 # 用户资料
@@ -60,7 +60,7 @@ class LoginUser(AbstractUser):
         return self.username
 
     def get_headimg_url(self):
-        return '/api/v1/media/' + str(self.headimg)
+        return 'http://p9260z3xy.bkt.clouddn.com/' + str(self.headimg)
     #
     # def save(self, *args, **kwargs):
     #     self.school_id = int(self.get_username())
