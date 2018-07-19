@@ -29,18 +29,18 @@ from rest_framework.permissions import (
     AllowAny,
     IsAuthenticated
 )
-from rewrite.authentication import ExpiringTokenAuthentication
+# from rewrite.authentication import ExpiringTokenAuthentication
 from django.http import Http404
 from rest_framework import mixins, generics
-from account.models import LoginUser
+# from account.models import LoginUser
 from .get_score import get_level
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 from rewrite.pagination import Pagination
-from rewrite.permissions import IsOwner
-from rest_framework.authtoken.models import Token
+# from rewrite.permissions import IsOwner
+# from rest_framework.authtoken.models import Token
 from rewrite.permissions import get_authentication
-from rest_framework.exceptions import APIException
+# from rest_framework.exceptions import APIException
 from rewrite.exception import (
     FoundBookFailed,
     FoundCommentFailed,
@@ -126,9 +126,10 @@ class UserBookListView(generics.ListAPIView):
     pagination_class = Pagination
 
     def get_queryset(self):
-        user = get_authentication(sign=self.request.META.get('HTTP_SIGN'), pk=self.kwargs['user_id'])
+        pk = self.request.META.get('HTTP_NAMEPLATE')[3:-2]
+        user = get_authentication(sign=self.request.META.get('HTTP_SIGN'), pk=pk)
         queryset = Book.objects.filter(owner=user)
-        return queryset.order_by('-create_at')
+        return queryset.order_by('-created_at')
 
 
 # 发布商家信息

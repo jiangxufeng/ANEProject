@@ -23,7 +23,7 @@ from .views import (
 
 urlpatterns = [
     url(r'^books/(?P<pk>\d+)$', BookDetailView.as_view(), name='book_detail'),
-    url(r'^books/user/(?P<user_id>\d+)$', UserBookListView.as_view(), name='user_book'),
+    url(r'^books/user/$', UserBookListView.as_view(), name='user_book'),
     url(r'^books/(?P<pk>\d+)/publish/', BookPublishView.as_view(), name='book_publish'),
     url(r'^books/$', BookListView.as_view(), name='get_all_books'),
     url(r'^shops/publish/', ShopPublishView.as_view(), name="shop_publish"),
