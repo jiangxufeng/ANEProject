@@ -1,0 +1,79 @@
+<!-- chat/templates/chat/room.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>Chat Room</title>
+</head>
+<body>
+    <textarea id="chat-log" cols="100" rows="20"></textarea><br/>
+    message&nbsp;:  <input id="chat-message-input" type="text" size="100"/><br/>
+
+    <input id="chat-message-submit" type="button" value="Send"/>
+</body>
+
+<script>
+    var roomName = {{ room_name_json }};
+    var username = {{ username }};
+    var chatSocket = new WebSocket(
+        'ws://' + window.location.host + '/ws/' + roomName + '/');
+
+    chatSocket.onopen = function open() {
+      console.log('WebSockets connection created.');
+    };
+
+    chatSocket.onmessage = function(e) {
+        var data = JSON.parse(e.data);
+        console.log(data);
+        var message = data['message'];
+        var username = data['username'];
+        document.querySelector('#chat-log').value += (username + ": " + message + '\n');
+    };
+
+    chatSocket.onclose = function(e) {
+        console.error('Chat socket closed unexpectedly');
+    };
+
+    document.querySelector('#chat-message-input').focus();
+    document.querySelector('#chat-message-input').onkeyup = function(e) {
+        if (e.keyCode === 13) {  // enter, return
+            document.querySelector('#chat-message-submit').click();
+        }
+    };
+
+    document.querySelector('#chat-message-submit').onclick = function(e) {
+        var messageInputDom = document.querySelector('#chat-message-input');
+        var message = messageInputDom.value;
+
+        chatSocket.send(JSON.stringify({
+            'message': message,
+            'username': username,
+        }));
+
+        messageInputDom.value = '';
+
+    };
+</script>
+
+<!--
+<script>
+    var socket = new WebSocket('ws://' + window.location.host + '/ws/notices/');
+    socket.onopen = function open() {
+      console.log('WebSockets connection created.');
+    };
+    socket.onmessage = function message(event) {
+        var data = JSON.parse(event.data);
+        console.log(data)
+        // NOTE: We escape JavaScript to prevent XSS attacks.
+        var title = data['title'];
+        var message = data['message'];
+        document.querySelector('#chat-log').value += (title + '\n');
+        document.querySelector('#chat-log').value += (message + '\n');
+
+    };
+    if (socket.readyState == WebSocket.OPEN) {
+      socket.onopen();
+    }
+</script>
+-->
+</html>
