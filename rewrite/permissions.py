@@ -5,30 +5,44 @@ from rest_framework import permissions
 from rest_framework.authtoken.models import Token
 import hashlib
 from account.models import LoginUser
-from .exception import MyAuthenticationFailed, FoundUserFailed
+from .exception import MyAuthenticationFailed, FoundUserFailed, MissingParameter
 
 
 # 是否为当前用户
-class IsOwner(permissions.BasePermission):
+class IsOwnerOrReadOnly(permissions.BasePermission):
     """
     当前登录的用户只能获取与修改自己的资料
     """
+
     def has_object_permission(self, request, view, obj):
-        key = request.META.get("HTTP_AUTHORIZATION")[6:]
-        token = Token.objects.filter(key=key)
-        if token is None:
-            return False
-        return token[0].user.username == obj.username
+        if request.method in permissions.SAFE_METHODS:
+            return True
+
+        # Instance must have an attribute named `owner`.
+        return obj.owner == request.user
 
 
-def get_authentication(sign, pk):
+def get_authentication(request, pk=None):
+    """
+    :param pk: 用户id, 默认为None
+    :param request: 当前请求
+    :return: user 当前用户
+    认证方式： pk + token + timestamp 的md5加密值是否与sign相等
+    """
     try:
+        if pk is None:
+            pk = request.META.get('HTTP_NAMEPLATE')[3:-2]
+        sign = request.META.get('HTTP_SIGN')
+        timestamp = request.META.get('HTTP_TIMESTAMP')
         user = LoginUser.objects.get(id=pk)
         token = Token.objects.get(user=user).key
-        res = str(pk) + token
-        if hashlib.md5(res.encode()).hexdigest() == sign:
-            user.save()
-            return user
-        raise MyAuthenticationFailed
+        res = str(pk) + token + timestamp
     except LoginUser.DoesNotExist:
         raise FoundUserFailed
+    except TypeError:  # 没有对应的请求头
+        raise MissingParameter
+    else:
+        if hashlib.md5(res.encode()).hexdigest() == sign:
+            user.save()  # 更新最后登录时间
+            return user
+        raise MyAuthenticationFailed

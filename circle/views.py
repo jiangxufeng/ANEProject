@@ -21,16 +21,18 @@ from .serializers import (
 from rest_framework.views import APIView
 from django.http import Http404
 from rest_framework import mixins, generics
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAuthenticatedOrReadOnly
 from .models import PostLike, PostComment, PostImage, PyPost
-from rewrite.permissions import get_authentication
+from rewrite.permissions import get_authentication, IsOwnerOrReadOnly
 from rewrite.pagination import Pagination
+from rewrite.authentication import MyAuthentication
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 from rewrite.exception import (
     FoundPostFailed,
     UserLikedPost,
     FoundLikeFailed,
+    UserIsNotTheOwnerOfLike,
 )
 from django.shortcuts import render
 from django.utils.safestring import mark_safe
@@ -44,19 +46,18 @@ def msg(request, username):
     })
 
 
-
 # 发帖
 class PyPostPublishView(APIView):
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAuthenticated,)
     serializer_class = PyPostPublishSerializer
+    authentication_classes = (MyAuthentication,)
 
     def post(self, request):
+        owner = request.user
         serializer = PyPostPublishSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
-            pk = serializer.validated_data['uid']
             title = serializer.validated_data['title']
             content = serializer.validated_data['content']
-            owner = get_authentication(pk=pk, sign=request.META.get("HTTP_SIGN"))
             passage = PyPost.objects.create(owner=owner, title=title, content=content)
             passage.save()
             msg = Response({
@@ -69,8 +70,8 @@ class PyPostPublishView(APIView):
 
 # 获取全部帖子并展示
 class PyPostListView(generics.ListAPIView):
-    permission_classes = (AllowAny,)
-    # authentication_classes = (ExpiringTokenAuthentication)
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (MyAuthentication, )
     serializer_class = PyPostListSerializer
     pagination_class = Pagination
     filter_backends = (DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter)
@@ -86,10 +87,9 @@ class PyPostListView(generics.ListAPIView):
 
 
 # 某个帖子详情
-class PyPostDetailView(mixins.RetrieveModelMixin,
-                       generics.GenericAPIView):
-    permission_classes = (AllowAny,)
-    # authentication_classes = (ExpiringTokenAuthentication)
+class PyPostDetailView(generics.RetrieveDestroyAPIView):
+    permission_classes = (IsOwnerOrReadOnly, IsAuthenticated)
+    authentication_classes = (MyAuthentication,)
     serializer_class = PyPostDetailSerializer
     queryset = PyPost.objects.all()
 
@@ -105,31 +105,45 @@ class PyPostDetailView(mixins.RetrieveModelMixin,
         else:
             return msg
 
-    def delete(self, request, pk):
-        try:
-            PyPost.objects.get(pk=pk).delete()
-            return Response(status=HTTP_204_NO_CONTENT)
-        except Http404:
-            raise FoundPostFailed
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)
+
+
+# class PyPostDetailView(generics.RetrieveUpdateDestroyAPIView):
+#     '''
+#     get:
+#         获取文章信息
+#     put:
+#         登录用户更新本人所发文章内容
+#     delete:
+#         登录用户删除本人整篇文章
+#     '''
+#
+#     # authentication_classes = (CsrfExemptSessionAuthentication,)
+#     permission_classes = (AllowAny,)
+#     serializer_class = PyPostDetailSerializer
+#     queryset = PyPost.objects.all()
+#     lookup_field = 'id'
+#     lookup_url_kwarg = 'pk'
 
 
 # 返回某用户发布的所有帖子
 class PyPostOfUserListView(generics.ListAPIView):
-    permission_classes = (AllowAny,)
-    # authentication_classes = (ExpiringTokenAuthentication)
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (MyAuthentication,)
     serializer_class = PyPostListSerializer
     pagination_class = Pagination
 
     def get_queryset(self):
-        pk = self.request.META.get('HTTP_NAMEPLATE')[3:-2]
-        user = get_authentication(sign=self.request.META.get('HTTP_SIGN'), pk=pk)
+        user = self.request.user
         queryset = PyPost.objects.filter(owner=user)
         return queryset.order_by('-created_at')
 
 
 # 上传图片
 class PostImageUploadView(APIView):
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (MyAuthentication,)
     serializer_class = UploadPostImageSerializer
 
     def get_posts(self, pid):
@@ -141,10 +155,8 @@ class PostImageUploadView(APIView):
     def post(self, request):
         serializer = UploadPostImageSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
-            uid = serializer.validated_data['uid']
             pid = serializer.validated_data['pid']
             image = serializer.validated_data['image']
-            get_authentication(pk=uid, sign=request.META.get('HTTP_SIGN'))
             passage = self.get_posts(pid=pid)
             images = PostImage.objects.create(passage=passage, image=image)
             images.save()
@@ -158,7 +170,8 @@ class PostImageUploadView(APIView):
 
 # 评论
 class PostCommentPublishView(APIView):
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (MyAuthentication,)
     serializer_class = PostCommentPublishSerializer
 
     def get_posts(self, pid):
@@ -168,10 +181,9 @@ class PostCommentPublishView(APIView):
             raise FoundPostFailed
 
     def post(self, request):
+        owner = request.user
         serializer = PostCommentPublishSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
-            uid = serializer.validated_data['uid']
-            owner = get_authentication(pk=uid, sign=request.META.get("HTTP_SIGN"))
             pid = serializer.validated_data['pid']
             psg = self.get_posts(pid)
             content = serializer.validated_data['content']
@@ -187,8 +199,8 @@ class PostCommentPublishView(APIView):
 
 # 某篇帖子的所有评论
 class PostCommentsListView(generics.ListAPIView):
-    permission_classes = (AllowAny,)
-    # authentication_classes = (ExpiringTokenAuthentication)
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (MyAuthentication,)
     serializer_class = PostCommentDetailSerializer
     pagination_class = Pagination
 
@@ -206,7 +218,8 @@ class PostCommentsListView(generics.ListAPIView):
 
 # 点赞
 class PostLikePublishView(APIView):
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (MyAuthentication,)
     serializer_class = PostLikePublishSerializer
 
     def get_posts(self, pid):
@@ -216,10 +229,9 @@ class PostLikePublishView(APIView):
             raise FoundPostFailed
 
     def post(self, request):
+        owner = request.user
         serializer = PostLikePublishSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
-            uid = serializer.validated_data['uid']
-            owner = get_authentication(pk=uid, sign=request.META.get("HTTP_SIGN"))
             pid = serializer.validated_data['pid']
             psg = self.get_posts(pid)
             try:
@@ -237,17 +249,15 @@ class PostLikePublishView(APIView):
 
 
 # 取消点赞
-class PostLikeDeleteView(APIView):
-    permission_classes = (AllowAny,)
+class PostLikeDeleteView(generics.DestroyAPIView):
+    permission_classes = (IsAuthenticated, IsOwnerOrReadOnly)
+    authentication_classes = (MyAuthentication,)
+    # serializer_class = PyPostDetailSerializer
+    queryset = PostLike.objects.all()
 
-    def delete(self, request, lid):
-        try:
-            like = PostLike.objects.get(id=lid)
-            like.delete()
-            Notice.objects.get(object_id=lid, type=4).delete()
-        except PostLike.DoesNotExist:
-            raise FoundLikeFailed
-        else:
-            msg = Response(status=HTTP_204_NO_CONTENT)
-            return msg
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)
 
+    def perform_destroy(self, instance):
+        Notice.objects.get(object_id=instance.id, type=4).delete()
+        instance.delete()

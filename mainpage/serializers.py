@@ -9,6 +9,7 @@ from .models import (
     Images,
     Animals,
     AnimalSaveMsg,
+    Application,
 )
 from rest_framework.serializers import (
     ModelSerializer,
@@ -38,6 +39,10 @@ class BookListSerializer(HyperlinkedModelSerializer):
     BookImages = SerializerMethodField()
     headimg = SerializerMethodField()
     nickname = SerializerMethodField()
+    place = SerializerMethodField()
+    language = SerializerMethodField()
+    types = SerializerMethodField()
+    country = SerializerMethodField()
 
     @staticmethod
     def setup_eager_loading(queryset):
@@ -60,15 +65,31 @@ class BookListSerializer(HyperlinkedModelSerializer):
     def get_headimg(self, obj):
         return obj.owner.get_headimg_url()
 
+    def get_place(self, obj):
+        return obj.get_place_display()
+
+    def get_language(self, obj):
+        return obj.get_language_display()
+
+    def get_types(self, obj):
+        return obj.get_types_display()
+
+    def get_country(self, obj):
+        return obj.get_country_display()
+
 
 # 图书详情
 class BookDetailSerializer(HyperlinkedModelSerializer):
     owner = HyperlinkedRelatedField(view_name='user_detail', read_only=True)
+    # oid = SerializerMethodField()
     bid = IntegerField(source='id')
     BookImages = UploadImageSerializer(many=True)
     headimg = SerializerMethodField()
     nickname = SerializerMethodField()
-
+    place = SerializerMethodField()
+    language = SerializerMethodField()
+    types = SerializerMethodField()
+    country = SerializerMethodField()
 
     @staticmethod
     def setup_eager_loading(queryset):
@@ -81,6 +102,20 @@ class BookDetailSerializer(HyperlinkedModelSerializer):
                   'country', 'place', 'created_at', 'status', 'BookImages')
         read_only_fields = ('name', 'image', 'level', 'language', 'types',
                             'country', 'place', 'created_at', 'status')
+
+    # def get_oid(self, obj):
+    #     return obj.owner.id
+    def get_place(self, obj):
+        return obj.get_place_display()
+
+    def get_language(self, obj):
+        return obj.get_language_display()
+
+    def get_types(self, obj):
+        return obj.get_types_display()
+
+    def get_country(self, obj):
+        return obj.get_country_display()
 
     def get_nickname(self, obj):
         return obj.owner.nickname
@@ -96,6 +131,50 @@ class BookPublishSerializer(ModelSerializer):
     class Meta:
         model = Book
         fields = ('name', 'image', 'language', 'types', 'country', 'place')
+
+
+# 提出图书交换请求
+class ApplicationPublishSerializer(ModelSerializer):
+    sender = IntegerField()
+    # receiver = IntegerField()
+    bid = IntegerField()
+
+    class Meta:
+        model = Application
+        fields = ('sender', 'bid')
+
+
+# 查看收到的申请请求
+class ApplicationDetailSerializer(HyperlinkedModelSerializer):
+    sender = HyperlinkedRelatedField(view_name='user_detail', read_only=True)
+    # receiver = HyperlinkedRelatedField(view_name='user_detail', read_only=True)
+    book = HyperlinkedRelatedField(view_name='book_detail', read_only=True)
+    sNickname = SerializerMethodField()
+    # rNickname = SerializerMethodField()
+    bookName = SerializerMethodField()
+    status = SerializerMethodField()
+
+    class Meta:
+        model = Application
+        fields = ('sender', 'book', 'sNickname', 'bookName', 'status')
+
+    def get_sNickname(self, obj):
+        return obj.sender.nickname
+    #
+    # def get_rNickname(self, obj):
+    #     return obj.receiver.nickname
+
+    def get_bookName(self, obj):
+        return obj.book.name
+
+    def get_status(self, obj):
+        if obj.status == 0:
+            return "未查看"
+        elif obj.status == 1:
+            return "已同意"
+        else:
+            return "未同意"
+        # return "未查看" if obj.status == 0 elif ""
 
 
 # 发布一个商家

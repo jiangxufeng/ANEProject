@@ -99,18 +99,26 @@ class Book(models.Model):
         return '%s有图书《%s》在平台上等待交换' % (self.owner.nickname, self.name)
 
 
-# def book_save(sender, instance, signal, *args, **kwargs):
-#     entity = instance
-#     if str(entity.create_at)[:19] == str(entity.updated_at)[:19]:
-#         for i in entity.owner.fans:
-#             event = Notice(sender=entity.owner, receiver=i, event=entity, type=1)
-#             event.save()
-#
-#
-# signals.post_save.connect(book_save, sender=Book)
+# 图书交换请求
+class Application(models.Model):
+    # 请求方
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='appli_sender')
+    # 接收方
+    receiver = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='appli_receiver')
+    # 图书
+    book = models.ForeignKey(Book, related_name='appli_book')
+    # 申请状态 0:未查看 1:同意 2:不同意
+    status = models.IntegerField(default=0)
+
+    def description(self):
+        return u'%s 申请加好友' % self.sender
+
+    class Meta:
+        db_table = 'application'
+        verbose_name_plural = u'好友申请'
+
 
 # 商家
-
 class Food(models.Model):
     PLACE_CHOICE = (
         ('1', '信息学部'),

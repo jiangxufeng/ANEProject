@@ -118,6 +118,8 @@ def post_like_notice(sender, instance=None, created=False, **kwargs):
     if created:
         event = Notice(sender=entity.owner, receiver=entity.passage.owner, event=entity, type=4)
         event.save()
+        # 消息推送
+        # 推送对象为消息接受者，推送内容为消息类型
         push(entity.passage.owner.username, {'type': 4})
 
 

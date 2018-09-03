@@ -132,24 +132,26 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.JSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',
     ),
+    'EXCEPTION_HANDLER': (
+        'rewrite.exception.custom_exception_handler'
+    ),
 
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        'rest_framework.authentication.SessionAuthentication',
-        'rest_framework.authentication.BasicAuthentication',
+        # 'rewrite.authentication.MyAuthentication',
+        # 'rest_framework.authentication.SessionAuthentication',
+        # 'rest_framework.authentication.BasicAuthentication',
    #     'rest_framework.authentication.TokenAuthentication',
-        'rewrite.authentication.ExpiringTokenAuthentication'
+
     ),
     "DEFAULT_PERMISSION_CLASSES": (
         'rest_framework.permissions.IsAuthenticated',
         'rest_framework.permissions.IsAuthenticatedOrReadOnly',
     ),
-    'EXCEPTION_HANDLER': (
-        'rewrite.exception.custom_exception_handler'
-    ),
+
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',  # 分页
     'PAGE_SIZE': 10,
     # 过滤
-    'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend',)
+    'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend',),
 
 }
 
@@ -188,10 +190,10 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media').replace("\\", "/")
 MEDIA_URL = PREFIX_URL + QINIU_BUCKET_DOMAIN + '/media/'
 
 # 跨域
-CORS_ALLOW_CREDENTIALS = True
-CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_CREDENTIALS = False
+CORS_ORIGIN_ALLOW_ALL = False
 CORS_ORIGIN_WHITELIST = (
-    '*',
+    '*'
 )
 
 CORS_ALLOW_METHODS = (
@@ -207,6 +209,8 @@ CORS_ALLOW_METHODS = (
 CORS_ALLOW_HEADERS = (
     'XMLHttpRequest',
     'X_FILENAME',
+    'nameplate',
+    'timestamp',
     'accept-encoding',
     'authorization',
     'content-type',

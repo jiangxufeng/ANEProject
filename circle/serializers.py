@@ -60,12 +60,12 @@ class PostCommentDetailSerializer(HyperlinkedModelSerializer):
 
 # 点赞
 class PostLikePublishSerializer(ModelSerializer):
-    uid = IntegerField()
+    # uid = IntegerField()
     pid = IntegerField()
 
     class Meta:
         model = PostLike
-        fields = ('uid', 'pid')
+        fields = ('pid',)
 
 
 # 点赞的返回信息
@@ -84,11 +84,11 @@ class PostLikeReturnSerializer(HyperlinkedModelSerializer):
 
 # 发布帖子
 class PyPostPublishSerializer(ModelSerializer):
-    uid = IntegerField()
+    #uid = IntegerField()
 
     class Meta:
         model = PyPost
-        fields = ('title', 'content', 'uid')
+        fields = ('title', 'content')
 
 
 # 帖子列表

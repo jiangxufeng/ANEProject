@@ -13,7 +13,6 @@ from rest_framework.status import (
     HTTP_204_NO_CONTENT,
 )
 from rest_framework.permissions import (
-    IsAuthenticated,
     AllowAny,
 )
 from rest_framework.response import Response
@@ -26,12 +25,12 @@ from .serializers import (
     FollowSerializer,
 )
 #from rest_framework.authentication import SessionAuthentication, BasicAuthentication
-from rewrite.authentication import ExpiringTokenAuthentication
+# from rewrite.authentication import ExpiringTokenAuthentication
 from .UserLogin import Userlogin
 from .models import LoginUser, Follow#, Fans
 from django.contrib.auth import authenticate
 from rewrite.authentication import expire_token
-from rewrite.permissions import IsOwner
+from rewrite.permissions import IsOwnerOrReadOnly
 from rest_framework import mixins
 from rest_framework import generics
 from rewrite.pagination import Pagination
@@ -47,7 +46,7 @@ from rewrite.exception import FoundUserFailed, WrongUsernameOrPwd, FollowAuthent
 class UserLoginView(APIView):
     serializer_class = UserLoginSerializer
     permission_classes = [AllowAny]
-    authentication_classes = (ExpiringTokenAuthentication,)
+    # authentication_classes = (ExpiringTokenAuthentication,)
 
     def post(self, request):
         serializer = UserLoginSerializer(data=request.data)
@@ -84,13 +83,13 @@ class UserDetailView(mixins.RetrieveModelMixin,
     # 该权限为当前登录用户只能获取自己信息
     permission_classes = (AllowAny,)
     # permission_classes = (IsAuthenticated,)
-    authentication_classes = (ExpiringTokenAuthentication,)
+    # authentication_classes = (ExpiringTokenAuthentication,)
     # permission_classes = (AllowAny, )
     # queryset = LoginUser.objects.all()
     serializer_class = UserDetailSerializer
 
     def get(self, request, pk):
-        user = get_authentication(sign=request.META.get('HTTP_SIGN'), pk=pk)
+        user = get_authentication(request, pk)
         try:
             cont = UserDetailSerializer(user)
             msg = Response(data={
@@ -109,7 +108,7 @@ class UserChangeInfoView(mixins.UpdateModelMixin,
     serializer_class = UserDetailSerializer
 
     def get_object(self):
-        return get_authentication(sign=self.request.META.get('HTTP_SIGN'), pk=self.kwargs['pk'])
+        return get_authentication(self.request, pk=self.kwargs['pk'])
 
     def put(self, request, *args, **kwargs):
         return self.update(request, *args, **kwargs)
@@ -151,7 +150,7 @@ class UserResetPasswordView(APIView):
     # authentication_classes = (ExpiringTokenAuthentication)
 
     def put(self, request, pk):
-        user = get_authentication(sign=request.META.get("HTTP_SIGN"), pk=pk)
+        user = get_authentication(request, pk=pk)
         serializer = UserPasswordResetSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             new_password = serializer.validated_data['password']
@@ -183,7 +182,7 @@ class UserBindPhoneView(APIView):
     # authentication_classes = (ExpiringTokenAuthentication,)
 
     def put(self, request, pk):
-        user = get_authentication(sign=request.META.get("HTTP_SIGN"), pk=pk)
+        user = get_authentication(request, pk=pk)
         serializer = UserBindPhoneSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             phone = serializer.validated_data['phone']
@@ -191,8 +190,8 @@ class UserBindPhoneView(APIView):
                 user.phone = phone
                 user.save(update_fields=['phone'])
                 msg = Response(status=HTTP_204_NO_CONTENT)
-            except Http404:
-                raise FoundUserFailed
+            # except Http404:
+            #     raise FoundUserFailed
             except:
                 msg = Response({
                     'error': 90500,
@@ -201,7 +200,7 @@ class UserBindPhoneView(APIView):
             return msg
 
     def delete(self, request, pk):
-        user = get_authentication(sign=request.META.get("HTTP_SIGN"), pk=pk)
+        user = get_authentication(request, pk=pk)
         try:
             user.phone = ''
             user.save()
@@ -229,7 +228,7 @@ class MakeFriendView(APIView):
             raise FollowAuthenticationFailed
         else:
             try:
-                fan = get_authentication(sign=request.META.get("HTTP_SIGN"), pk=pk)
+                fan = get_authentication(request, pk=pk)
                 idols = LoginUser.objects.get(pk=idol)
             except LoginUser.DoesNotExist:
                 raise FoundUserFailed
@@ -244,7 +243,7 @@ class MakeFriendView(APIView):
 
     def delete(self, request, idol, pk):
         try:
-            fans = get_authentication(sign=request.META.get("HTTP_SIGN"), pk=pk)
+            fans = get_authentication(request, pk=pk)
             idol = LoginUser.objects.get(pk=idol)
             follow = Follow.objects.get(fans=fans, follows=idol)
         except LoginUser.DoesNotExist:
@@ -267,7 +266,7 @@ class GetFollowView(generics.ListAPIView):
     # authentication_classes = (ExpiringTokenAuthentication,)
 
     def get_queryset(self):
-        owner = get_authentication(sign=self.request.META.get("HTTP_SIGN"), pk=self.kwargs['pk'])
+        owner = get_authentication(self.request, pk=self.kwargs['pk'])
         queryset = Follow.objects.filter(fans=owner)
         queryset = self.get_serializer().setup_eager_loading(queryset)
         return queryset.order_by('id')
@@ -281,7 +280,7 @@ class GetFansView(generics.ListAPIView):
     pagination_class = Pagination
 
     def get_queryset(self):
-        owner = get_authentication(sign=self.request.META.get("HTTP_SIGN"), pk=self.kwargs['pk'])
+        owner = get_authentication(self.request, pk=self.kwargs['pk'])
         queryset = Follow.objects.filter(follows=owner)
         return queryset
 

@@ -22,14 +22,17 @@ from .serializers import (
     AnimalMsgPublishSerializer,
     AnimalMsgDetailSerializer,
     AnimalMsgListSerializer,
+    ApplicationPublishSerializer,
+    ApplicationDetailSerializer,
 )
-from .models import Book, Food, FoodComment, AnimalSaveMsg, Images, Animals
+from .models import Book, Food, FoodComment, AnimalSaveMsg, Images, Animals, Application
+from account.models import LoginUser
 from rest_framework.views import APIView
 from rest_framework.permissions import (
     AllowAny,
     IsAuthenticated
 )
-# from rewrite.authentication import ExpiringTokenAuthentication
+from rewrite.authentication import MyAuthentication
 from django.http import Http404
 from rest_framework import mixins, generics
 # from account.models import LoginUser
@@ -47,18 +50,19 @@ from rewrite.exception import (
     FoundShopFailed,
     FoundAnimalFailed,
     ParamsInvalid,
+    FoundUserFailed,
+    ExchangeIsYourself
 )
 
 
 # 发布图书信息
 class BookPublishView(APIView):
-    # permission_classes = (IsAuthenticated, IsOwner)
-    permission_classes = (AllowAny,)
-    # authentication_classes = (ExpiringTokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (MyAuthentication,)
     serializer_class = BookPublishSerializer
 
-    def post(self, request, pk):
-        user = get_authentication(sign=request.META.get("HTTP_SIGN"), pk=pk)
+    def post(self, request):
+        user = request.user
         serializer = BookPublishSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             name = serializer.validated_data['name']
@@ -120,27 +124,25 @@ class BookDetailView(mixins.RetrieveModelMixin,
 
 # 获取当前用户在平台上发布交换的图书
 class UserBookListView(generics.ListAPIView):
-    permission_classes = (AllowAny,)
-    # authentication_classes = (ExpiringTokenAuthentication)
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (MyAuthentication,)
     serializer_class = BookDetailSerializer
     pagination_class = Pagination
 
     def get_queryset(self):
-        pk = self.request.META.get('HTTP_NAMEPLATE')[3:-2]
-        user = get_authentication(sign=self.request.META.get('HTTP_SIGN'), pk=pk)
+        user = self.request.user
         queryset = Book.objects.filter(owner=user)
         return queryset.order_by('-created_at')
 
 
 # 发布商家信息
 class ShopPublishView(APIView):
-    permission_classes = (AllowAny,)
-    # authentication_classes = (ExpiringTokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (MyAuthentication,)
     serializer_class = ShopPublishSerializer
 
     def post(self, request):
         serializer = ShopPublishSerializer(data=request.data)
-
         if serializer.is_valid(raise_exception=True):
             name = serializer.validated_data['name']
             location = serializer.validated_data['location']
@@ -148,7 +150,6 @@ class ShopPublishView(APIView):
             image = serializer.validated_data['image']
             food = Food.objects.create(name=name, location=location, introduce=introduce, image=image)
             food.save()
-
             msg = Response({
                 'error': 0,
                 'data': ShopDetailSerializer(food, context={'request': request}).data,
@@ -196,8 +197,8 @@ class GetAllShopView(generics.ListAPIView):
 
 # 发布对商家的评论
 class FoodCommentPublishView(APIView):
-    permission_classes = (AllowAny,)
-    # authentication_classes = (ExpiringTokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (MyAuthentication,)
     serializer_class = FoodCommentPublishSerializer
 
     def get_shop(self, shop_id):
@@ -206,9 +207,9 @@ class FoodCommentPublishView(APIView):
         except Food.DoesNotExist:
             raise FoundShopFailed
 
-    def post(self, request, pk, shop_id):
+    def post(self, request, shop_id):
         serializer = FoodCommentPublishSerializer(data=request.data)
-        owner = get_authentication(sign=request.META.get("HTTP_SIGN"), pk=pk)
+        owner = request.user
         shop = self.get_shop(shop_id)
         if serializer.is_valid(raise_exception=True):
             content = serializer.validated_data['content']
@@ -270,7 +271,8 @@ class GetShopCommentView(generics.ListAPIView):
 
 # 上传图片(多张，每次一张，多次上传）
 class UploadImagesView(APIView):
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (MyAuthentication,)
     serializer_class = UploadImageSerializer
 
     def get_model(self, bid, sid, aid):
@@ -309,11 +311,12 @@ class UploadImagesView(APIView):
 
 # 发布流浪猫狗信息
 class AnimalsMsgPublishView(APIView):
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (MyAuthentication,)
     serializer_class = AnimalMsgPublishSerializer
 
-    def post(self, request, pk):
-        author = get_authentication(sign=request.META.get('HTTP_SIGN'), pk=pk)
+    def post(self, request):
+        author = request.user
         serializer = AnimalMsgPublishSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             title = serializer.validated_data['title']
@@ -364,3 +367,52 @@ class AnimalsMsgListView(generics.ListAPIView):
     def get_queryset(self):
         queryset = Animals.objects.all()
         return queryset.order_by('-created_at')
+
+
+# 提出交换申请
+class ApplicationPublishView(APIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (MyAuthentication,)
+    serializer_class = ApplicationPublishSerializer
+
+    def get_book(self, bid):
+        try:
+            return Book.objects.get(id=bid)
+        except Book.DoesNotExist:
+            raise FoundBookFailed
+
+    def post(self, request):
+        serializer = ApplicationPublishSerializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            # sid = serializer.validated_data['sender']
+            sender = request.user
+            # rid = serializer.validated_data['receiver']
+            bid = serializer.validated_data['bid']
+            book = self.get_book(bid=bid)
+            receiver = book.owner
+            if sender == receiver:
+                raise ExchangeIsYourself
+            application = Application.objects.create(sender=sender, receiver=receiver, book=book)
+            application.save()
+            msg = Response({
+                'error': 0,
+                'data': {'sender': sender.nickname, 'receiver': book.owner.nickname, 'book': book.name},
+                'message': 'Success to put forward an application for exchange.'
+            }, HTTP_201_CREATED)
+            return msg
+
+
+# 获取收到的所有申请
+class ApplicationListView(generics.ListAPIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (MyAuthentication,)
+    serializer_class = ApplicationDetailSerializer
+    pagination_class = Pagination
+    filter_backends = (DjangoFilterBackend,)  # filters.SearchFilter,# filters.OrderingFilter)
+    filter_fields = ('status', )
+    #  search_fields = ('title',)
+
+    def get_queryset(self):
+        receiver = self.request.user
+        queryset = Application.objects.filter(receiver=receiver)
+        return queryset.order_by('status')

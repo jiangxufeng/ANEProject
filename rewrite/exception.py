@@ -123,9 +123,21 @@ class FoundAnimalFailed(APIException):
     status_code = 404
 
 
+# 图书交换对象为自己
+class ExchangeIsYourself(APIException):
+    default_detail = _("30005You can't exchange the book with yourself.")
+    status_code = 400
+
+
 # 参数错误
 class ParamsInvalid(APIException):
     default_detail = _("70001Invalid params.")
+    status_code = 400
+
+
+# 缺少关键参数
+class MissingParameter(APIException):
+    default_detail = _("70002Missing key parameter.")
     status_code = 400
 
 
@@ -145,6 +157,12 @@ class UserLikedPost(APIException):
 class FoundLikeFailed(APIException):
     default_detail = _("40008Not found the like of the post.")
     status_code = 404
+
+
+# 取消的赞owner与当前用户不一致
+class UserIsNotTheOwnerOfLike(APIException):
+    default_detail = _("40009The user is not the owner of like.")
+    status_code = 400
 
 
 # 消息通知不存在

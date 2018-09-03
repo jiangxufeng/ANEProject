@@ -27,6 +27,6 @@ urlpatterns = [
     url(r'^posts/comments/$', PostCommentPublishView.as_view(), name='post_comment_publish'),
     url(r'^posts/(?P<pid>\d+)/comments/$', PostCommentsListView.as_view(), name='post_comments'),
     url(r'^posts/likes/$', PostLikePublishView.as_view(), name='post_like_publish'),
-    url(r'^posts/likes/(?P<lid>\d+)/$', PostLikeDeleteView.as_view(), name='post_like_delete'),
+    url(r'^posts/likes/(?P<pk>\d+)/$', PostLikeDeleteView.as_view(), name='post_like_delete'),
     url(r'^msg/(?P<username>\d+)/$', msg, name='msg')
 ]

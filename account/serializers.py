@@ -118,6 +118,7 @@ class UserDetailSerializer(ModelSerializer):
     fansNum = SerializerMethodField()
     followNum = SerializerMethodField()
     noticeNum = SerializerMethodField()
+    sex = SerializerMethodField()
 
     class Meta:
         model = LoginUser
@@ -150,6 +151,9 @@ class UserDetailSerializer(ModelSerializer):
 
     def get_noticeNum(self, obj):
         return obj.notice_receiver.filter(status=False).count()
+
+    def get_sex(self, obj):
+        return obj.get_sex_display()
 
 
 # 用户登录创建

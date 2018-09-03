@@ -36,5 +36,5 @@ class Pagination(PageNumberPagination):
             ('next', next_link),
             ('previous', previous),
             ('data', data),
-            ('error', '0')
+            ('error', 0)
         ]))
