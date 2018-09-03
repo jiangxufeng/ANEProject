@@ -5,6 +5,7 @@
 from rest_framework.pagination import PageNumberPagination
 from collections import OrderedDict
 from rest_framework.response import Response
+from django.utils.translation import ugettext_lazy as _
 
 
 # 分页处理
@@ -17,14 +18,18 @@ class Pagination(PageNumberPagination):
     page_query_param = 'page'
     # 每页最大显示数量
     max_page_size = 10
+    # 添加无效页面的错误码
+    invalid_page_message = _('70002Invalid page.')
 
     def get_paginated_response(self, data):
         next_link = self.get_next_link()
         previous = self.get_previous_link()
-        if next_link is None:
+        if not next_link:
             next_link = ""
-        if previous is None:
+
+        if not previous:
             previous = ""
+
         now = self.page.number
         if self.page.paginator.count >= now * self.page_size:
             number = self.page_size

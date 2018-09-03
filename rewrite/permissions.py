@@ -8,18 +8,25 @@ from account.models import LoginUser
 from .exception import MyAuthenticationFailed, FoundUserFailed, MissingParameter
 
 
-# 是否为当前用户
+# 拥有者是否为当前用户
 class IsOwnerOrReadOnly(permissions.BasePermission):
     """
-    当前登录的用户只能获取与修改自己的资料
+        当请求方式为POST、PUT、DELETE等非安全方式时，判断obj拥有者是否为当前认证用户
     """
 
     def has_object_permission(self, request, view, obj):
         if request.method in permissions.SAFE_METHODS:
             return True
 
-        # Instance must have an attribute named `owner`.
         return obj.owner == request.user
+
+
+# 申请接受者是否为当前认证用户
+class IsReceiver(permissions.BasePermission):
+
+    def has_object_permission(self, request, view, obj):
+
+        return obj.receiver == request.user
 
 
 def get_authentication(request, pk=None):

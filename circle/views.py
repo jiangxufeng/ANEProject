@@ -48,6 +48,9 @@ def msg(request, username):
 
 # 发帖
 class PyPostPublishView(APIView):
+    """
+       已认证用户具有权限
+    """
     permission_classes = (IsAuthenticated,)
     serializer_class = PyPostPublishSerializer
     authentication_classes = (MyAuthentication,)
@@ -70,8 +73,11 @@ class PyPostPublishView(APIView):
 
 # 获取全部帖子并展示
 class PyPostListView(generics.ListAPIView):
-    permission_classes = (IsAuthenticated,)
-    authentication_classes = (MyAuthentication, )
+    """
+       未认证用户允许获取
+    """
+    permission_classes = (AllowAny,)
+    # authentication_classes = (MyAuthentication, )
     serializer_class = PyPostListSerializer
     pagination_class = Pagination
     filter_backends = (DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter)
@@ -88,7 +94,10 @@ class PyPostListView(generics.ListAPIView):
 
 # 某个帖子详情
 class PyPostDetailView(generics.RetrieveDestroyAPIView):
-    permission_classes = (IsOwnerOrReadOnly, IsAuthenticated)
+    """
+       未认证用户允许获取，已认证用户允许获取与删除自己的帖子
+    """
+    permission_classes = (IsOwnerOrReadOnly,)
     authentication_classes = (MyAuthentication,)
     serializer_class = PyPostDetailSerializer
     queryset = PyPost.objects.all()
@@ -129,6 +138,9 @@ class PyPostDetailView(generics.RetrieveDestroyAPIView):
 
 # 返回某用户发布的所有帖子
 class PyPostOfUserListView(generics.ListAPIView):
+    """
+       返回已认证用户的所有帖子
+    """
     permission_classes = (IsAuthenticated,)
     authentication_classes = (MyAuthentication,)
     serializer_class = PyPostListSerializer
@@ -142,6 +154,9 @@ class PyPostOfUserListView(generics.ListAPIView):
 
 # 上传图片
 class PostImageUploadView(APIView):
+    """
+       已认证用户允许访问提交
+    """
     permission_classes = (IsAuthenticated,)
     authentication_classes = (MyAuthentication,)
     serializer_class = UploadPostImageSerializer
@@ -170,6 +185,9 @@ class PostImageUploadView(APIView):
 
 # 评论
 class PostCommentPublishView(APIView):
+    """
+       已认证用户允许评论
+    """
     permission_classes = (IsAuthenticated,)
     authentication_classes = (MyAuthentication,)
     serializer_class = PostCommentPublishSerializer
@@ -199,8 +217,11 @@ class PostCommentPublishView(APIView):
 
 # 某篇帖子的所有评论
 class PostCommentsListView(generics.ListAPIView):
-    permission_classes = (IsAuthenticated,)
-    authentication_classes = (MyAuthentication,)
+    """
+        所有用户都允许获取
+    """
+    permission_classes = (AllowAny,)
+    # authentication_classes = (MyAuthentication,)
     serializer_class = PostCommentDetailSerializer
     pagination_class = Pagination
 
@@ -218,6 +239,9 @@ class PostCommentsListView(generics.ListAPIView):
 
 # 点赞
 class PostLikePublishView(APIView):
+    """
+        已认证用户允许点赞
+    """
     permission_classes = (IsAuthenticated,)
     authentication_classes = (MyAuthentication,)
     serializer_class = PostLikePublishSerializer
@@ -250,6 +274,9 @@ class PostLikePublishView(APIView):
 
 # 取消点赞
 class PostLikeDeleteView(generics.DestroyAPIView):
+    """
+        以认证用户允许取消自己所点的赞
+    """
     permission_classes = (IsAuthenticated, IsOwnerOrReadOnly)
     authentication_classes = (MyAuthentication,)
     # serializer_class = PyPostDetailSerializer

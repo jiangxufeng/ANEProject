@@ -153,10 +153,11 @@ class ApplicationDetailSerializer(HyperlinkedModelSerializer):
     # rNickname = SerializerMethodField()
     bookName = SerializerMethodField()
     status = SerializerMethodField()
+    apid = IntegerField(source='id')
 
     class Meta:
         model = Application
-        fields = ('sender', 'book', 'sNickname', 'bookName', 'status')
+        fields = ('sender', 'book', 'sNickname', 'bookName', 'status', 'apid')
 
     def get_sNickname(self, obj):
         return obj.sender.nickname
@@ -168,13 +169,7 @@ class ApplicationDetailSerializer(HyperlinkedModelSerializer):
         return obj.book.name
 
     def get_status(self, obj):
-        if obj.status == 0:
-            return "未查看"
-        elif obj.status == 1:
-            return "已同意"
-        else:
-            return "未同意"
-        # return "未查看" if obj.status == 0 elif ""
+        return obj.get_status_display()
 
 
 # 发布一个商家
@@ -303,7 +298,7 @@ class AnimalMsgListSerializer(HyperlinkedModelSerializer):
         return UploadImageSerializer(obj.AnimalImage.all(), many=True).data[:3]
 
 
-# 详情
+# 流浪猫狗信息详情
 class AnimalMsgDetailSerializer(HyperlinkedModelSerializer):
     author = HyperlinkedRelatedField(view_name='user_detail', read_only=True)
     headimg = SerializerMethodField()
@@ -320,3 +315,13 @@ class AnimalMsgDetailSerializer(HyperlinkedModelSerializer):
 
     def get_headimg(self, obj):
         return obj.author.get_headimg_url()
+
+
+# 申请处理
+class ApplicationHandleSerializer(ModelSerializer):
+    result = IntegerField()
+
+    class Meta:
+        model = Application
+        fields = ('result',)
+

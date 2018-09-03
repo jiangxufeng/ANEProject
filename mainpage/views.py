@@ -24,6 +24,7 @@ from .serializers import (
     AnimalMsgListSerializer,
     ApplicationPublishSerializer,
     ApplicationDetailSerializer,
+    ApplicationHandleSerializer,
 )
 from .models import Book, Food, FoodComment, AnimalSaveMsg, Images, Animals, Application
 from account.models import LoginUser
@@ -35,14 +36,14 @@ from rest_framework.permissions import (
 from rewrite.authentication import MyAuthentication
 from django.http import Http404
 from rest_framework import mixins, generics
-# from account.models import LoginUser
+from rest_framework.exceptions import NotFound
 from .get_score import get_level
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 from rewrite.pagination import Pagination
-# from rewrite.permissions import IsOwner
+from rewrite.permissions import IsReceiver
 # from rest_framework.authtoken.models import Token
-from rewrite.permissions import get_authentication
+# from rewrite.permissions import get_authentication
 # from rest_framework.exceptions import APIException
 from rewrite.exception import (
     FoundBookFailed,
@@ -57,6 +58,9 @@ from rewrite.exception import (
 
 # 发布图书信息
 class BookPublishView(APIView):
+    """
+        已认证用户可以发布新的图书交换信息
+    """
     permission_classes = (IsAuthenticated,)
     authentication_classes = (MyAuthentication,)
     serializer_class = BookPublishSerializer
@@ -85,6 +89,9 @@ class BookPublishView(APIView):
 
 # 获取全部图书并展示
 class BookListView(generics.ListAPIView):
+    """
+        所有用户可以获取到全部交换的图书
+    """
     permission_classes = (AllowAny,)
     # authentication_classes = (ExpiringTokenAuthentication)
     serializer_class = BookListSerializer
@@ -104,6 +111,9 @@ class BookListView(generics.ListAPIView):
 # 某一本图书详情
 class BookDetailView(mixins.RetrieveModelMixin,
                      generics.GenericAPIView):
+    """
+        所有用户可以获取到图书详情
+    """
     permission_classes = (AllowAny,)
     # authentication_classes = (ExpiringTokenAuthentication)
     serializer_class = BookDetailSerializer
@@ -124,6 +134,9 @@ class BookDetailView(mixins.RetrieveModelMixin,
 
 # 获取当前用户在平台上发布交换的图书
 class UserBookListView(generics.ListAPIView):
+    """
+        已认证用户可以获取到自己在平台上发布的交换图书信息
+    """
     permission_classes = (IsAuthenticated,)
     authentication_classes = (MyAuthentication,)
     serializer_class = BookDetailSerializer
@@ -137,6 +150,9 @@ class UserBookListView(generics.ListAPIView):
 
 # 发布商家信息
 class ShopPublishView(APIView):
+    """
+        只有已认证用户可以发布新的商家信息
+    """
     permission_classes = (IsAuthenticated,)
     authentication_classes = (MyAuthentication,)
     serializer_class = ShopPublishSerializer
@@ -161,6 +177,9 @@ class ShopPublishView(APIView):
 # 获取某个商家信息
 class ShopDetailView(mixins.RetrieveModelMixin,
                      generics.GenericAPIView):
+    """
+        所有用户可以获取到具体的某个商家信息
+    """
     permission_classes = (AllowAny,)
     # authentication_classes = (ExpiringTokenAuthentication)
     serializer_class = ShopDetailSerializer
@@ -180,6 +199,9 @@ class ShopDetailView(mixins.RetrieveModelMixin,
 
 # 获取所有商家信息
 class GetAllShopView(generics.ListAPIView):
+    """
+        所有用户可以获取到商家信息
+    """
     permission_classes = (AllowAny,)
     # authentication_classes = (ExpiringTokenAuthentication)
     serializer_class = ShopListSerializer
@@ -197,6 +219,9 @@ class GetAllShopView(generics.ListAPIView):
 
 # 发布对商家的评论
 class FoodCommentPublishView(APIView):
+    """
+        已认证用户可以发布对商家的评价
+    """
     permission_classes = (IsAuthenticated,)
     authentication_classes = (MyAuthentication,)
     serializer_class = FoodCommentPublishSerializer
@@ -249,8 +274,11 @@ class FoodCommentDetailView(mixins.RetrieveModelMixin,
             return msg
 
 
-# 获取对某个商家的全部评价，或者发布对某商家的评价
+# 获取对某个商家的全部评价
 class GetShopCommentView(generics.ListAPIView):
+    """
+        所有用户可以获取到对商家的评价信息
+    """
     permission_classes = (AllowAny,)
     # authentication_classes = (ExpiringTokenAuthentication)
     serializer_class = FoodCommentDetailSerializer
@@ -271,6 +299,12 @@ class GetShopCommentView(generics.ListAPIView):
 
 # 上传图片(多张，每次一张，多次上传）
 class UploadImagesView(APIView):
+    """
+        只有已认证用户可以上传图片
+        bid: 图片所属图书id
+        sid: 图片所属商家id
+        aid: 图片所属流浪猫狗信息id
+    """
     permission_classes = (IsAuthenticated,)
     authentication_classes = (MyAuthentication,)
     serializer_class = UploadImageSerializer
@@ -311,6 +345,9 @@ class UploadImagesView(APIView):
 
 # 发布流浪猫狗信息
 class AnimalsMsgPublishView(APIView):
+    """
+        只有已认证用户可以发布流浪猫狗信息
+    """
     permission_classes = (IsAuthenticated,)
     authentication_classes = (MyAuthentication,)
     serializer_class = AnimalMsgPublishSerializer
@@ -335,6 +372,9 @@ class AnimalsMsgPublishView(APIView):
 # 流浪猫狗具体详情
 class AnimalsMsgDetailView(mixins.RetrieveModelMixin,
                            generics.GenericAPIView):
+    """
+        所有用户可以获取具体的流浪猫狗信息
+    """
     permission_classes = (AllowAny,)
     # authentication_classes = (ExpiringTokenAuthentication)
     serializer_class = AnimalMsgDetailSerializer
@@ -355,6 +395,9 @@ class AnimalsMsgDetailView(mixins.RetrieveModelMixin,
 
 # 获取所有的流浪猫狗信息
 class AnimalsMsgListView(generics.ListAPIView):
+    """
+        所有用户可以获取流浪猫狗信息
+    """
     permission_classes = (AllowAny,)
     # authentication_classes = (ExpiringTokenAuthentication)
     serializer_class = AnimalMsgListSerializer
@@ -371,6 +414,9 @@ class AnimalsMsgListView(generics.ListAPIView):
 
 # 提出交换申请
 class ApplicationPublishView(APIView):
+    """
+        已认证用户可以提出图书交换的申请
+    """
     permission_classes = (IsAuthenticated,)
     authentication_classes = (MyAuthentication,)
     serializer_class = ApplicationPublishSerializer
@@ -390,8 +436,10 @@ class ApplicationPublishView(APIView):
             bid = serializer.validated_data['bid']
             book = self.get_book(bid=bid)
             receiver = book.owner
-            if sender == receiver:
+
+            if sender == receiver:         # 如果申请交换的图书owner为当前用户本人
                 raise ExchangeIsYourself
+
             application = Application.objects.create(sender=sender, receiver=receiver, book=book)
             application.save()
             msg = Response({
@@ -404,7 +452,10 @@ class ApplicationPublishView(APIView):
 
 # 获取收到的所有申请
 class ApplicationListView(generics.ListAPIView):
-    permission_classes = (IsAuthenticated,)
+    """
+        已认证的用户只能获取到申请接受者为自己的申请
+    """
+    permission_classes = (IsAuthenticated, IsReceiver)
     authentication_classes = (MyAuthentication,)
     serializer_class = ApplicationDetailSerializer
     pagination_class = Pagination
@@ -416,3 +467,35 @@ class ApplicationListView(generics.ListAPIView):
         receiver = self.request.user
         queryset = Application.objects.filter(receiver=receiver)
         return queryset.order_by('status')
+
+
+# 处理收到的申请
+class ApplicationHandleView(APIView):
+    """
+        以认证用户只可以处理receiver为自己的申请
+    """
+    permission_classes = (IsAuthenticated, IsReceiver)
+    authentication_classes = (MyAuthentication,)
+    serializer_class = ApplicationHandleSerializer
+
+    def post(self, request, apid):
+
+        try:
+            application = Application.objects.get(id=apid)
+        except Application.DoesNotExist:
+            raise NotFound("30007The Application does not exist.")
+        else:
+            serializer = ApplicationHandleSerializer(data=request.data)
+            if serializer.is_valid(raise_exception=True):
+                result = serializer.validated_data['result']
+                application.status = result
+                application.save()
+                # 将结果推送给申请发送者，后续添加
+                msg = Response({
+                    'error': 0,
+                    'data': {'status': result},
+                    'message': 'Success to handle the application.'
+                }, HTTP_200_OK)
+                return msg
+
+

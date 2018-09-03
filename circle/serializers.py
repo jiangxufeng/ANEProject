@@ -133,7 +133,7 @@ class PyPostDetailSerializer(HyperlinkedModelSerializer):
     nickname = SerializerMethodField()
     headImg = SerializerMethodField()
     likes = PostLikeReturnSerializer(many=True)
-    comments = PostCommentDetailSerializer(many=True)
+    comments = SerializerMethodField()
     pid = IntegerField(source='id')
     images = PostImageReturnSerializer(many=True)
 
@@ -147,3 +147,6 @@ class PyPostDetailSerializer(HyperlinkedModelSerializer):
 
     def get_headImg(self, obj):
         return obj.owner.get_headimg_url()
+
+    def get_comments(self, obj):
+        return PostCommentDetailSerializer(obj.comments.all(), many=True, context={'request': None}).data[:6]

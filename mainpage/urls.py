@@ -20,6 +20,7 @@ from .views import (
     AnimalsMsgListView,
     ApplicationPublishView,
     ApplicationListView,
+    ApplicationHandleView,
 )
 
 
@@ -29,7 +30,8 @@ urlpatterns = [
     url(r'^books/publish/$', BookPublishView.as_view(), name='book_publish'),
     url(r'^books/$', BookListView.as_view(), name='get_all_books'),
     url(r'^books/applications/publish/$', ApplicationPublishView.as_view(), name='application_publish'),
-    url(r'^books/applications/$', ApplicationListView.as_view(), name='application_lish'),
+    url(r'^books/applications/$', ApplicationListView.as_view(), name='application_list'),
+    url(r'^books/applications/(?P<apid>\d+)/$', ApplicationHandleView.as_view(), name='application_handle'),
     url(r'^shops/publish/$', ShopPublishView.as_view(), name="shop_publish"),
     url(r'^shops/(?P<shop_id>\d+)/comment/$', FoodCommentPublishView.as_view(), name='shop_comment_pub'),
     url(r'^shops/comments/(?P<pk>\d+)$', FoodCommentDetailView.as_view(), name='foodComment_detail'),

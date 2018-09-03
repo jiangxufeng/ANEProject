@@ -170,4 +170,3 @@ class FoundNoticeFailed(APIException):
     default_detail = _("50001Not found the notice.")
     status_code = 404
 
-
