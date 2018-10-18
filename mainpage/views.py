@@ -36,12 +36,12 @@ from rest_framework.permissions import (
 from rewrite.authentication import MyAuthentication
 from django.http import Http404
 from rest_framework import mixins, generics
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import NotFound, ValidationError
 from .get_score import get_level
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 from rewrite.pagination import Pagination
-from rewrite.permissions import IsReceiver
+from rewrite.permissions import IsReceiver, IsSender
 # from rest_framework.authtoken.models import Token
 # from rewrite.permissions import get_authentication
 # from rest_framework.exceptions import APIException
@@ -54,6 +54,8 @@ from rewrite.exception import (
     FoundUserFailed,
     ExchangeIsYourself
 )
+from django.db.models import Q
+# from rewrite.permissions import IsOwnerFilterBackend
 
 
 # 发布图书信息
@@ -73,11 +75,11 @@ class BookPublishView(APIView):
             country = serializer.validated_data['country']
             language = serializer.validated_data['language']
             types = serializer.validated_data['types']
-            image = serializer.validated_data['image']
+            images = serializer.validated_data['images']
             place = serializer.validated_data['place']
             level = get_level(name)
             book = Book.objects.create(owner=user, name=name, country=country, language=language, types=types,
-                                       image=image, place=place, level=level)
+                                       images=images, place=place, level=level)
             book.save()
             msg = Response({
                 'error': 0,
@@ -132,20 +134,24 @@ class BookDetailView(mixins.RetrieveModelMixin,
             return msg
 
 
-# 获取当前用户在平台上发布交换的图书
+# 获取用户在平台上发布交换的图书
 class UserBookListView(generics.ListAPIView):
     """
-        已认证用户可以获取到自己在平台上发布的交换图书信息
+       任意用户都可获取
     """
-    permission_classes = (IsAuthenticated,)
-    authentication_classes = (MyAuthentication,)
+    permission_classes = (AllowAny,)
+    # authentication_classes = (MyAuthentication,)
     serializer_class = BookDetailSerializer
     pagination_class = Pagination
 
     def get_queryset(self):
-        user = self.request.user
-        queryset = Book.objects.filter(owner=user)
-        return queryset.order_by('-created_at')
+        try:
+            user = LoginUser.objects.get(id=self.kwargs['pk'])
+        except LoginUser.DoesNotExist:
+            raise FoundUserFailed
+        else:
+            queryset = Book.objects.filter(owner=user)
+            return queryset.order_by('-created_at')
 
 
 # 发布商家信息
@@ -163,8 +169,8 @@ class ShopPublishView(APIView):
             name = serializer.validated_data['name']
             location = serializer.validated_data['location']
             introduce = serializer.validated_data['introduce']
-            image = serializer.validated_data['image']
-            food = Food.objects.create(name=name, location=location, introduce=introduce, image=image)
+            images = serializer.validated_data['images']
+            food = Food.objects.create(name=name, location=location, introduce=introduce, images=images)
             food.save()
             msg = Response({
                 'error': 0,
@@ -239,7 +245,6 @@ class FoodCommentPublishView(APIView):
         if serializer.is_valid(raise_exception=True):
             content = serializer.validated_data['content']
             score = serializer.validated_data['score']
-
             comment = FoodComment.objects.create(owner=owner, food=shop, content=content, score=score)
             comment.save()
             shop.number += 1
@@ -297,47 +302,24 @@ class GetShopCommentView(generics.ListAPIView):
         return queryset.order_by('-created_at')
 
 
-# 上传图片(多张，每次一张，多次上传）
+# 上传图片
 class UploadImagesView(APIView):
     """
         只有已认证用户可以上传图片
-        bid: 图片所属图书id
-        sid: 图片所属商家id
-        aid: 图片所属流浪猫狗信息id
     """
     permission_classes = (IsAuthenticated,)
     authentication_classes = (MyAuthentication,)
     serializer_class = UploadImageSerializer
 
-    def get_model(self, bid, sid, aid):
-        if bid != '0':
-            try:
-                return Book.objects.get(id=bid), None, None
-            except Book.DoesNotExist:
-                raise FoundBookFailed
-        elif sid != '0':
-            try:
-                return None, Food.objects.get(id=sid), None
-            except Food.DoesNotExist:
-                raise FoundShopFailed
-        elif aid != '0':
-            try:
-                return None, None, Animals.objects.get(id=aid)
-            except Animals.DoesNotExist:
-                raise FoundAnimalFailed
-        else:
-            raise ParamsInvalid
-
-    def post(self, request, bid, sid, aid):
+    def post(self, request):
         serializer = UploadImageSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
-            book, shop, animal = self.get_model(bid, sid, aid)
             image = serializer.validated_data['image']
-            img = Images.objects.create(bookOwner=book, shopOwner=shop, animalOwner=animal, image=image)
+            img = Images.objects.create(image=image)
             img.save()
             msg = Response({
                 'error': 0,
-                'data': {"bookOwner": bid, "shopOwner": sid, "animalOwner": aid, "image": img.get_img_url()},
+                'data': {"image": img.get_img_url()},
                 'message': 'Success to upload the image.'
             }, HTTP_201_CREATED)
             return msg
@@ -428,30 +410,32 @@ class ApplicationPublishView(APIView):
             raise FoundBookFailed
 
     def post(self, request):
+        sender = request.user
         serializer = ApplicationPublishSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
-            # sid = serializer.validated_data['sender']
-            sender = request.user
-            # rid = serializer.validated_data['receiver']
-            bid = serializer.validated_data['bid']
-            book = self.get_book(bid=bid)
-            receiver = book.owner
+            from_bid = serializer.validated_data['from_bid']
+            to_bid = serializer.validated_data['to_bid']
 
-            if sender == receiver:         # 如果申请交换的图书owner为当前用户本人
+            if from_bid == to_bid:
                 raise ExchangeIsYourself
 
-            application = Application.objects.create(sender=sender, receiver=receiver, book=book)
+            from_book = self.get_book(bid=from_bid)
+            to_book = self.get_book(to_bid)
+            receiver = to_book.owner
+            application = Application.objects.create(sender=sender, receiver=receiver, frombook=from_book,
+                                                     tobook=to_book)
             application.save()
             msg = Response({
                 'error': 0,
-                'data': {'sender': sender.nickname, 'receiver': book.owner.nickname, 'book': book.name},
+                'data': {'sender': sender.nickname, 'receiver': to_book.owner.nickname,
+                         'frombook': from_book.name, 'tobook': to_book.name},
                 'message': 'Success to put forward an application for exchange.'
             }, HTTP_201_CREATED)
             return msg
 
 
 # 获取收到的所有申请
-class ApplicationListView(generics.ListAPIView):
+class ApplicationReceiveView(generics.ListAPIView):
     """
         已认证的用户只能获取到申请接受者为自己的申请
     """
@@ -469,10 +453,29 @@ class ApplicationListView(generics.ListAPIView):
         return queryset.order_by('status')
 
 
+# 获取用户发出的所有申请
+class ApplicationSendView(generics.ListAPIView):
+    """
+        已认证的用户只能获取到自己发出的请求
+    """
+    permission_classes = (IsAuthenticated, IsSender)
+    authentication_classes = (MyAuthentication,)
+    serializer_class = ApplicationDetailSerializer
+    pagination_class = Pagination
+    filter_backends = (DjangoFilterBackend,)  # filters.SearchFilter,# filters.OrderingFilter)
+    filter_fields = ('status', )
+    #  search_fields = ('title',)
+
+    def get_queryset(self):
+        sender = self.request.user
+        queryset = Application.objects.filter(sender=sender)
+        return queryset.order_by('status')
+
+
 # 处理收到的申请
 class ApplicationHandleView(APIView):
     """
-        以认证用户只可以处理receiver为自己的申请
+        已认证用户只可以处理receiver为自己的申请
     """
     permission_classes = (IsAuthenticated, IsReceiver)
     authentication_classes = (MyAuthentication,)
@@ -490,6 +493,10 @@ class ApplicationHandleView(APIView):
                 result = serializer.validated_data['result']
                 application.status = result
                 application.save()
+                if result == 1:
+                    book = application.tobook
+                    book.status = True
+                    book.save()
                 # 将结果推送给申请发送者，后续添加
                 msg = Response({
                     'error': 0,

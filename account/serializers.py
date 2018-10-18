@@ -48,7 +48,7 @@ class FollowSerializer(ModelSerializer):
 
     def get_url(self, obj):
       #  print(obj.follows.headimg)
-        return reverse('user_detail', args=(obj.follows.id,))
+        return reverse('user_public_detail', args=(obj.follows.id,))
 
     def get_headimg(self, obj):
         return obj.follows.get_headimg_url()
@@ -60,7 +60,7 @@ class FollowSerializer(ModelSerializer):
         return obj.follows.signature
 
     def get_sex(self, obj):
-        return obj.follows.sex
+        return obj.follows.get_sex_display()
 
 
 # 粉丝返回信息
@@ -94,7 +94,7 @@ class FansSerializer(ModelSerializer):
 
     def get_url(self, obj):
         #  print(obj.follows.headimg)
-        return reverse('user_detail', args=(obj.fans.id,))
+        return reverse('user__public_detail', args=(obj.fans.id,))
 
     def get_headimg(self, obj):
         return obj.fans.get_headimg_url()
@@ -109,8 +109,8 @@ class FansSerializer(ModelSerializer):
         return obj.fans.sex
 
 
-# 用户详情
-class UserDetailSerializer(ModelSerializer):
+# 用户详情(仅限用户本人获取)
+class UserSelfDetailSerializer(ModelSerializer):
     # username = ReadOnlyField()
     headimg = ImageField(default='moren.jpeg')
     bookNum = SerializerMethodField()
@@ -151,6 +151,44 @@ class UserDetailSerializer(ModelSerializer):
 
     def get_noticeNum(self, obj):
         return obj.notice_receiver.filter(status=False).count()
+
+    def get_sex(self, obj):
+        return obj.get_sex_display()
+
+
+# 用户信息(对外公布)
+class UserPublicDetailSerializer(ModelSerializer):
+    # username = ReadOnlyField()
+    headimg = ImageField(default='moren.jpeg')
+    bookNum = SerializerMethodField()
+    uid = ReadOnlyField(source='id')
+    fansNum = SerializerMethodField()
+    followNum = SerializerMethodField()
+    sex = SerializerMethodField()
+
+    class Meta:
+        model = LoginUser
+        fields = (
+            'headimg',
+            'uid',
+            'last_time',
+            'nickname',
+            'signature',
+            'sex',
+            'bookNum',
+            'fansNum',
+            'followNum',
+        )
+        read_only_fields = ('last_time', )
+
+    def get_fansNum(self, obj):
+        return obj.follows.all().count()
+
+    def get_followNum(self, obj):
+        return obj.fans.all().count()
+
+    def get_bookNum(self, obj):
+        return obj.books.all().count()
 
     def get_sex(self, obj):
         return obj.get_sex_display()
@@ -202,4 +240,46 @@ class UserBindPhoneSerializer(ModelSerializer):
         elif data[0] != '1':
             raise ValidationError("Invalid cell phone number.")
         return value
+
+
+class UserUpdateInfoSerializer(ModelSerializer):
+    # username = ReadOnlyField()
+    headimg = ImageField(default='moren.jpeg')
+    bookNum = SerializerMethodField()
+    uid = ReadOnlyField(source='id')
+    fansNum = SerializerMethodField()
+    followNum = SerializerMethodField()
+    noticeNum = SerializerMethodField()
+
+    class Meta:
+        model = LoginUser
+        fields = (
+            'headimg',
+            'uid',
+            'last_time',
+            'nickname',
+            'username',
+            'school_id',
+            'real_name',
+            'signature',
+            'sex',
+            'phone',
+            'bookNum',
+            'fansNum',
+            'followNum',
+            'noticeNum',
+        )
+        read_only_fields = ('username', 'last_time', 'school_id', 'real_name', 'phone')
+
+    def get_fansNum(self, obj):
+        return obj.follows.all().count()
+
+    def get_followNum(self, obj):
+        return obj.fans.all().count()
+
+    def get_bookNum(self, obj):
+        return obj.books.all().count()
+
+    def get_noticeNum(self, obj):
+        return obj.notice_receiver.filter(status=False).count()
 

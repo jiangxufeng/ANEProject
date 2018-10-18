@@ -12,9 +12,8 @@ from django.dispatch import receiver
 from channel.consumers import push
 
 
-def get_pyImage_upload_to(instance, filename):
-    title = instance.passage.title
-    return 'PyPosts/' + title + '/' + filename
+def get_pyImage_upload_to():
+    pass
 
 
 # 帖子
@@ -27,6 +26,8 @@ class PyPost(models.Model):
     content = models.TextField(verbose_name="postContent", default="", max_length=144)
     # 发帖时间
     created_at = models.DateTimeField(auto_now_add=True)
+    # 图片
+    images = models.CharField(max_length=1024, null=True, verbose_name='images')
 
     def __str__(self):
         return self.title
@@ -54,6 +55,23 @@ class PostComment(models.Model):
         return {'passage': self.passage.title, 'passageUrl': self.passage.get_absolute_url(), 'content': self.content, 'created': self.created_at}
 
 
+# 二级评论
+class PostCommentReply(models.Model):
+    # 回复的评论
+    commentParent = models.ForeignKey(PostComment, related_name="replies")
+    # 回复者
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='commentReply')
+    # 回复的对象
+    toWho = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='replyTome')
+    # 回复的内容
+    content = models.CharField(max_length=144, verbose_name="content")
+    # 回复的时间
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.owner.nickname
+
+
 # 点赞
 class PostLike(models.Model):
     # 点赞者
@@ -70,20 +88,6 @@ class PostLike(models.Model):
 
     def description(self):
         return {'passage': self.passage.title, 'postUrl': self.get_absolute_url()}
-
-
-# 图片
-class PostImage(models.Model):
-    # 所属帖子
-    passage = models.ForeignKey(PyPost, related_name="images")
-    # 图片
-    image = models.ImageField(upload_to=get_pyImage_upload_to, verbose_name="PyPostImages", null=False)
-
-    def __str__(self):
-        return self.passage.title
-
-    def get_img_url(self):
-        return 'http://p9260z3xy.bkt.clouddn.com/' + str(self.image)
 
 
 # def comment_save(sender, instance, signal, *args, **kwargs):

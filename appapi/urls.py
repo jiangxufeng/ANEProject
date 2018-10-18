@@ -19,12 +19,13 @@ from django.conf import settings
 from django.conf.urls.static import static
 from account.views import page_not_found
 
+
 urlpatterns = [
-    url(r'^api/admin/', admin.site.urls),
-    url(r'^api/v1/users/', include('account.urls')),
-    url(r'^api/v1/', include('mainpage.urls')),
-    url(r'^api/v1/', include('circle.urls'),),
-    url(r'^api/v1/notices/', include('notice.urls')),
-    # url(r'^docs/', include('rest_framework_docs.urls')),
+    url(r'^ANEPAdmin/', admin.site.urls),
+    url(r'^v1/users/', include('account.urls')),
+    url(r'^v1/', include('mainpage.urls')),
+    url(r'^v1/', include('circle.urls'),),
+    url(r'^v1/notices/', include('notice.urls')),
+
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 handler404 = page_not_found

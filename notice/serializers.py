@@ -16,14 +16,14 @@ from .models import Notice
 
 
 class NoticeListSerializer(HyperlinkedModelSerializer):
-    sender = HyperlinkedRelatedField(view_name='user_detail', read_only=True)
+    sender = HyperlinkedRelatedField(view_name='user_public_detail', read_only=True)
     nickname = SerializerMethodField()
     data = SerializerMethodField()
     nid = IntegerField(source='id')
 
     class Meta:
         model = Notice
-        fields = ('sender', 'nickname', 'nid', 'data')
+        fields = ('sender', 'nickname', 'nid', 'data', 'type')
 
     def get_nickname(self, obj):
         return obj.sender.nickname

@@ -11,7 +11,7 @@ from django.utils.translation import ugettext_lazy as _
 # 分页处理
 class Pagination(PageNumberPagination):
     # 默认每页显示数据条数
-    page_size = 6
+    page_size = 10
     # 获取url参数中设置的每页显示数据条数
     page_size_query_param = 'size'
     # 获取url中传入的页码

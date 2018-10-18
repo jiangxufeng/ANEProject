@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Book, Food, FoodComment, Application
+from .models import Book, Food, FoodComment, Application, Animals
 # Register your models here.
 
 
@@ -19,3 +19,4 @@ admin.site.register(Book, BookAdmin)
 admin.site.register(Food, FoodAdmin)
 admin.site.register(FoodComment, FoodCommentAdmin)
 admin.site.register(Application)
+admin.site.register(Animals)

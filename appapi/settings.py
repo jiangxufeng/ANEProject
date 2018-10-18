@@ -95,7 +95,8 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [('127.0.0.1', 6379)],
+            "hosts": ["redis://:suummmmer@127.0.0.1:6379"],
+
         },
         # 配置路由的路径
         # "ROUTING": "exmchannels.routing.channel_routing",
@@ -190,7 +191,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media').replace("\\", "/")
 MEDIA_URL = PREFIX_URL + QINIU_BUCKET_DOMAIN + '/media/'
 
 # 跨域
-CORS_ALLOW_CREDENTIALS = False
+CORS_ALLOW_CREDENTIALS = True
 CORS_ORIGIN_ALLOW_ALL = False
 CORS_ORIGIN_WHITELIST = (
     '*'

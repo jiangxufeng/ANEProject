@@ -14,29 +14,32 @@ from rest_framework.status import (
 )
 from rest_framework.permissions import (
     AllowAny,
+    IsAuthenticated,
 )
 from rest_framework.response import Response
 from .serializers import (
     UserPasswordResetSerializer,
-    UserDetailSerializer,
+    UserSelfDetailSerializer,
+    UserPublicDetailSerializer,
     UserLoginSerializer,
     UserBindPhoneSerializer,
     FansSerializer,
     FollowSerializer,
+    UserUpdateInfoSerializer,
 )
 #from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 # from rewrite.authentication import ExpiringTokenAuthentication
 from .UserLogin import Userlogin
 from .models import LoginUser, Follow#, Fans
 from django.contrib.auth import authenticate
-from rewrite.authentication import expire_token
-from rewrite.permissions import IsOwnerOrReadOnly
+from rewrite.authentication import expire_token, MyAuthentication
+# from rewrite.permissions import IsOwnerOrReadOnly
 from rest_framework import mixins
 from rest_framework import generics
 from rewrite.pagination import Pagination
-from django.conf import settings
-from rest_framework.authtoken.models import Token
-from rewrite.permissions import get_authentication
+# from django.conf import settings
+# from rest_framework.authtoken.models import Token
+# from rewrite.permissions import get_authentication
 from rewrite.exception import FoundUserFailed, WrongUsernameOrPwd, FollowAuthenticationFailed, PasswordIsSame
 
 #EXPIRE_MINUTES = getattr(settings, 'REST_FRAMEWORK_TOKEN_EXPIRE_MINUTES', 1)
@@ -76,24 +79,27 @@ class UserLoginView(APIView):
                     raise WrongUsernameOrPwd
 
 
-# 获取用户信息
-class UserDetailView(mixins.RetrieveModelMixin,
-                     generics.GenericAPIView):
+# 用户获取自己的信息
+class UserSelfDetailView(mixins.RetrieveModelMixin,
+                         generics.GenericAPIView):
+    """
+        仅限用户本人获取
+    """
 
     # 该权限为当前登录用户只能获取自己信息
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAuthenticated,)
     # permission_classes = (IsAuthenticated,)
-    # authentication_classes = (ExpiringTokenAuthentication,)
+    authentication_classes = (MyAuthentication,)
     # permission_classes = (AllowAny, )
     # queryset = LoginUser.objects.all()
-    serializer_class = UserDetailSerializer
+    serializer_class = UserSelfDetailSerializer
 
-    def get(self, request, pk):
-        user = get_authentication(request, pk)
+    def get(self, request):
+        user = request.user
         try:
-            cont = UserDetailSerializer(user)
+            cont = UserSelfDetailSerializer(user)
             msg = Response(data={
-                'error': 0,
+                'error': '0',
                 'data': cont.data,
             }, status=HTTP_200_OK)
         except Http404:    # 获取失败，没有找到对应数据
@@ -101,14 +107,43 @@ class UserDetailView(mixins.RetrieveModelMixin,
         return msg
 
 
+# 获取用户对外显示信息
+class UserPublicDetailView(mixins.RetrieveModelMixin,
+                           generics.GenericAPIView):
+    """
+        所有用户可以获取
+    """
+
+    # 该权限为当前登录用户只能获取自己信息
+    permission_classes = (AllowAny,)
+    # permission_classes = (IsAuthenticated,)
+    authentication_classes = (MyAuthentication,)
+    # permission_classes = (AllowAny, )
+    # queryset = LoginUser.objects.all()
+    serializer_class = UserPublicDetailSerializer
+
+    def get(self, request, pk):
+        try:
+            user = LoginUser.objects.get(pk=pk)
+            cont = UserPublicDetailSerializer(user)
+            msg = Response(data={
+                'error': '0',
+                'data': cont.data,
+            }, status=HTTP_200_OK)
+        except LoginUser.DoesNotExist:    # 获取失败，没有找到对应数据
+            raise FoundUserFailed
+        return msg
+
+
 # 用户更改资料
 class UserChangeInfoView(mixins.UpdateModelMixin,
                          generics.GenericAPIView):
-    permission_classes = (AllowAny,)
-    serializer_class = UserDetailSerializer
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (MyAuthentication,)
+    serializer_class = UserUpdateInfoSerializer
 
     def get_object(self):
-        return get_authentication(self.request, pk=self.kwargs['pk'])
+        return self.request.user
 
     def put(self, request, *args, **kwargs):
         return self.update(request, *args, **kwargs)
@@ -144,13 +179,12 @@ class UserChangeInfoView(mixins.UpdateModelMixin,
 
 # 修改密码
 class UserResetPasswordView(APIView):
-    permission_classes = (AllowAny, )
-    # permission_classes = (IsAuthenticated, IsOwner)
+    permission_classes = (IsAuthenticated,)
     serializer_class = UserPasswordResetSerializer
-    # authentication_classes = (ExpiringTokenAuthentication)
+    authentication_classes = (MyAuthentication,)
 
-    def put(self, request, pk):
-        user = get_authentication(request, pk=pk)
+    def put(self, request):
+        user = request.user
         serializer = UserPasswordResetSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             new_password = serializer.validated_data['password']
@@ -160,29 +194,26 @@ class UserResetPasswordView(APIView):
                 try:
                     user.set_password(new_password)
                     user.save()
-                    msg = {
-                        'error': 0,
-                        'data': '',
-                        'message': 'Success to change password'
-                    }
-                except:
+                    return Response(status=HTTP_204_NO_CONTENT)
+
+                except Exception as e:
                     msg = {
                         'error': '1',
                         'data': '',
-                        'error_msg': 'Failed to change password'
+                        'error_msg': e
                     }
-                return Response(msg, HTTP_200_OK)
+                    return Response(msg, HTTP_400_BAD_REQUEST)
 
 
 # 绑定手机与解绑
 class UserBindPhoneView(APIView):
     # permission_classes = (IsOwner, IsAuthenticated)
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAuthenticated,)
     serializer_class = UserBindPhoneSerializer
-    # authentication_classes = (ExpiringTokenAuthentication,)
+    authentication_classes = (MyAuthentication,)
 
-    def put(self, request, pk):
-        user = get_authentication(request, pk=pk)
+    def put(self, request):
+        user = request.user
         serializer = UserBindPhoneSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             phone = serializer.validated_data['phone']
@@ -192,23 +223,19 @@ class UserBindPhoneView(APIView):
                 msg = Response(status=HTTP_204_NO_CONTENT)
             # except Http404:
             #     raise FoundUserFailed
-            except:
+            except Exception as e:
                 msg = Response({
                     'error': 90500,
-                    'error_msg': 'Failed to change password'
+                    'error_msg': e
                 }, HTTP_400_BAD_REQUEST)
             return msg
 
-    def delete(self, request, pk):
-        user = get_authentication(request, pk=pk)
+    def delete(self, request):
+        user = request.user
         try:
             user.phone = ''
             user.save()
-            msg = Response({
-                'error': 0,
-                'data': '',
-                'message': 'unbind phone successfully'
-            }, HTTP_200_OK)
+            msg = Response(status=HTTP_204_NO_CONTENT)
         except Http404:
             raise FoundUserFailed
         return msg
@@ -217,44 +244,43 @@ class UserBindPhoneView(APIView):
 # 关注和取消关注
 class MakeFriendView(APIView):
     # permission_classes = (IsAuthenticated, IsOwner)
-    permission_classes = (AllowAny,)
-    # authentication_classes = (ExpiringTokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (MyAuthentication,)
 
-    def is_same(self, idol, pk):
-        return idol == pk
+    def get(self, request, idol):
+        user = request.user
+        try:
+            idols = LoginUser.objects.get(pk=idol)
+        except LoginUser.DoesNotExist:
+            raise FoundUserFailed
 
-    def get(self, request, idol, pk):
-        if self.is_same(idol, pk):
+        if user == idols:
             raise FollowAuthenticationFailed
-        else:
-            try:
-                fan = get_authentication(request, pk=pk)
-                idols = LoginUser.objects.get(pk=idol)
-            except LoginUser.DoesNotExist:
-                raise FoundUserFailed
-            follow = Follow.objects.create(follows=idols, fans=fan)
-            follow.save()
-            msg = Response({
-                'error': 0,
-                'data': '',
-                'message': 'Pay attention to the user successfully'
-            }, HTTP_200_OK)
+
+        follow = Follow.objects.create(follows=idols, fans=user)
+        follow.save()
+        msg = Response({
+            'error': 0,
+            'data': '',
+            'message': 'Pay attention to the user successfully'
+        }, HTTP_200_OK)
         return msg
 
-    def delete(self, request, idol, pk):
+    def delete(self, request, idol):
+        fans = request.user
         try:
-            fans = get_authentication(request, pk=pk)
             idol = LoginUser.objects.get(pk=idol)
             follow = Follow.objects.get(fans=fans, follows=idol)
         except LoginUser.DoesNotExist:
             raise FoundUserFailed
-        follow.delete()
-        msg = Response({
-            'error': 0,
-            'data': '',
-            'message': 'Unfollow the user successfully'
-        }, HTTP_200_OK)
-        return msg
+        else:
+            follow.delete()
+            msg = Response({
+                'error': 0,
+                'data': '',
+                'message': 'Unfollow the user successfully'
+            }, HTTP_200_OK)
+            return msg
 
 
 # 获取关注的人
@@ -263,26 +289,34 @@ class GetFollowView(generics.ListAPIView):
     permission_classes = (AllowAny,)
     serializer_class = FollowSerializer
     pagination_class = Pagination
-    # authentication_classes = (ExpiringTokenAuthentication,)
+    # authentication_classes = (MyAuthentication,)
 
     def get_queryset(self):
-        owner = get_authentication(self.request, pk=self.kwargs['pk'])
-        queryset = Follow.objects.filter(fans=owner)
-        queryset = self.get_serializer().setup_eager_loading(queryset)
-        return queryset.order_by('id')
+        try:
+            owner = LoginUser.objects.get(id=self.kwargs['pk'])
+        except LoginUser.DoesNotExist:
+            raise FoundUserFailed
+        else:
+            queryset = Follow.objects.filter(fans=owner)
+            queryset = self.get_serializer().setup_eager_loading(queryset)
+            return queryset.order_by('id')
 
 
 # 获取粉丝列表
 class GetFansView(generics.ListAPIView):
     permission_classes = (AllowAny,)
-    # authentication_classes = (ExpiringTokenAuthentication)
-    serializer_class = FansSerializer
+    serializer_class = FollowSerializer
     pagination_class = Pagination
+    # authentication_classes = (MyAuthentication,)
 
     def get_queryset(self):
-        owner = get_authentication(self.request, pk=self.kwargs['pk'])
-        queryset = Follow.objects.filter(follows=owner)
-        return queryset
+        try:
+            owner = LoginUser.objects.get(id=self.kwargs['pk'])
+        except LoginUser.DoesNotExist:
+            raise FoundUserFailed
+        else:
+            queryset = Follow.objects.filter(follows=owner)
+            return queryset.order_by('id')
 
 
 # 404处理信息

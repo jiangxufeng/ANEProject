@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import PostLike, PostComment, PyPost, PostImage
+from .models import PostLike, PostComment, PyPost
 # Register your models here.
 
 
@@ -13,5 +13,4 @@ class PyPostAdmin(admin.ModelAdmin):
 
 admin.site.register(PostLike, PostLikeAdmin)
 admin.site.register(PostComment)
-admin.site.register(PostImage)
 admin.site.register(PyPost, PyPostAdmin)

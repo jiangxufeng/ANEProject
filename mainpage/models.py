@@ -4,43 +4,14 @@ from django.conf import settings
 from notice.models import Notice
 from django.contrib.contenttypes import fields
 from django.db.models import signals
-
-
-def get_book_upload_to(instance, filename):
-    bookname = instance.name
-    return 'books/' + bookname + '/' + filename
-
-
-def get_food_upload_to(instance, filename):
-    name = instance.name
-    return 'foods/' + name + '/' + filename
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from channel.consumers import push
 
 
 def get_image_upload_to(instance, filename):
-    #choice = instance.types
-    #owner = instance.owner
-    #types = {'1': 'books', '2': 'shops', '3': 'animals'}
-    # try:
-    #     owner = instance.bookOwner.id
-    #     types = 'books'
-    # except:
-    #     try:
-    #         owner = instance.shopOwner.id
-    #         types = 'shops'
-    #     except:
-    #         owner = instance.animalOwner.id
-    #         types = 'animals'
-    if instance.bookOwner:
-        types = 'books'
-        owner = instance.bookOwner.id
-    elif instance.shopOwner:
-        types = 'shops'
-        owner = instance.shopOwner.id
-    else:
-        types = 'animals'
-        owner = instance.animalOwner.id
 
-    return 'images/' + types + '/' + str(owner) + '/' + filename
+    return 'images/' + filename
 
 
 # 图书
@@ -68,7 +39,7 @@ class Book(models.Model):
     # 图书名
     name = models.CharField(max_length=20, verbose_name='name')
     # 图书封面照片
-    image = models.ImageField(upload_to=get_book_upload_to, verbose_name='image')
+    images = models.CharField(max_length=1024, default="http://p9260z3xy.bkt.clouddn.com/books/mask.png", verbose_name='image')
     # 图书语言
     language = models.CharField(max_length=2, default='ch', choices=LANGUAGE_CHOICE, verbose_name='language')
     # 图书地界（国内或国外）
@@ -110,16 +81,18 @@ class Application(models.Model):
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='appli_sender')
     # 接收方
     receiver = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='appli_receiver')
-    # 图书
-    book = models.ForeignKey(Book, related_name='appli_book')
+    # 用于交换的图书
+    frombook = models.ForeignKey(Book, related_name='frombook')
+    # 想要交换的图书
+    tobook = models.ForeignKey(Book, related_name='tobook')
     # 申请状态 0:未查看 1:同意 2:不同意
     status = models.IntegerField(default=0, choices=STATUS_CHOICE, verbose_name='status')
 
     def __str__(self):
-        return self.book.name
+        return self.sender.nickname
 
     def description(self):
-        return u'%s 申请加好友' % self.sender
+        return {'sender': self.sender.nickname, 'frombook': self.frombook.name, 'tobook': self.tobook.name}
 
     class Meta:
         db_table = 'application'
@@ -141,7 +114,7 @@ class Food(models.Model):
     # 商家地点
     location = models.CharField(max_length=1, verbose_name='location', default='1', choices=PLACE_CHOICE)
     # 图片
-    image = models.ImageField(upload_to=get_food_upload_to, verbose_name='images', default='moren.jpg')
+    images = models.CharField(max_length=1024, default="http://p9260z3xy.bkt.clouddn.com/foods/mask.png", verbose_name='image')
     # 评分
     rating = models.FloatField(default=0.0, verbose_name='rating')
     # 商家介绍
@@ -201,6 +174,8 @@ class Animals(models.Model):
     content = models.CharField(max_length=114, verbose_name='content')
     # 创建时间
     created_at = models.DateTimeField(auto_now_add=True)
+    # 图片
+    images = models.CharField(max_length=1024, null=True, verbose_name='images')
 
     def __str__(self):
         return self.title
@@ -225,12 +200,6 @@ class AnimalSaveMsg(models.Model):
 
 
 class Images(models.Model):
-    # 图书所有者
-    bookOwner = models.ForeignKey(Book, related_name="BookImages", null=True)
-    # 商家所有者
-    shopOwner = models.ForeignKey(Food, related_name="ShopImages", null=True)
-    # 流浪猫狗所有者
-    animalOwner = models.ForeignKey(Animals, related_name="AnimalImages", null=True)
     # 图片
     image = models.ImageField(upload_to=get_image_upload_to, verbose_name='images', null=False)
 
@@ -239,4 +208,13 @@ class Images(models.Model):
 
     def get_img_url(self):
         return 'http://p9260z3xy.bkt.clouddn.com/' + str(self.image)
+
+
+@receiver(post_save, sender=Application)
+def post_application_notice(sender, instance=None, created=False, **kwargs):
+    entity = instance
+    if created:
+        event = Notice(sender=entity.sender, receiver=entity.receiver, event=entity, type=2)
+        event.save()
+        push(entity.receiver.username, {'type': 2})
 

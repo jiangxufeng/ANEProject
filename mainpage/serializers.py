@@ -34,9 +34,9 @@ class UploadImageSerializer(ModelSerializer):
 
 # 图书列表
 class BookListSerializer(HyperlinkedModelSerializer):
-    owner = HyperlinkedRelatedField(view_name='user_detail', read_only=True)
+    owner = HyperlinkedRelatedField(view_name='user_public_detail', read_only=True)
     bid = IntegerField(source='id')
-    BookImages = SerializerMethodField()
+    images = SerializerMethodField()
     headimg = SerializerMethodField()
     nickname = SerializerMethodField()
     place = SerializerMethodField()
@@ -51,13 +51,13 @@ class BookListSerializer(HyperlinkedModelSerializer):
 
     class Meta:
         model = Book
-        fields = ('owner', 'headimg', 'nickname', 'bid', 'name', 'image', 'level', 'language', 'types',
-                  'country', 'place', 'created_at', 'status', 'BookImages')
-        read_only_fields = ('name', 'image', 'level', 'language', 'types',
+        fields = ('owner', 'headimg', 'nickname', 'bid', 'name', 'level', 'language', 'types',
+                  'country', 'place', 'created_at', 'status', 'images')
+        read_only_fields = ('name', 'images', 'level', 'language', 'types',
                             'country', 'place', 'created_at', 'status')
 
-    def get_BookImages(self, obj):
-        return UploadImageSerializer(obj.BookImages.all(), many=True).data[:3]
+    def get_images(self, obj):
+        return obj.images.split(";")[:3]
 
     def get_nickname(self, obj):
         return obj.owner.nickname
@@ -80,10 +80,10 @@ class BookListSerializer(HyperlinkedModelSerializer):
 
 # 图书详情
 class BookDetailSerializer(HyperlinkedModelSerializer):
-    owner = HyperlinkedRelatedField(view_name='user_detail', read_only=True)
+    owner = HyperlinkedRelatedField(view_name='user_public_detail', read_only=True)
     # oid = SerializerMethodField()
     bid = IntegerField(source='id')
-    BookImages = UploadImageSerializer(many=True)
+    images = SerializerMethodField()
     headimg = SerializerMethodField()
     nickname = SerializerMethodField()
     place = SerializerMethodField()
@@ -98,9 +98,9 @@ class BookDetailSerializer(HyperlinkedModelSerializer):
 
     class Meta:
         model = Book
-        fields = ('owner', 'headimg', 'nickname', 'bid', 'name', 'image', 'level', 'language', 'types',
-                  'country', 'place', 'created_at', 'status', 'BookImages')
-        read_only_fields = ('name', 'image', 'level', 'language', 'types',
+        fields = ('owner', 'headimg', 'nickname', 'bid', 'name', 'level', 'language', 'types',
+                  'country', 'place', 'created_at', 'status', 'images')
+        read_only_fields = ('name', 'images', 'level', 'language', 'types',
                             'country', 'place', 'created_at', 'status')
 
     # def get_oid(self, obj):
@@ -123,41 +123,46 @@ class BookDetailSerializer(HyperlinkedModelSerializer):
     def get_headimg(self, obj):
         return obj.owner.get_headimg_url()
 
+    def get_images(self, obj):
+        return obj.images.split(";")
+
 
 # 发布图书
 class BookPublishSerializer(ModelSerializer):
-    image = ImageField(default="books/mask.png")
+    images = CharField(default="http://p9260z3xy.bkt.clouddn.com/books/mask.png")
 
     class Meta:
         model = Book
-        fields = ('name', 'image', 'language', 'types', 'country', 'place')
+        fields = ('name', 'images', 'language', 'types', 'country', 'place')
 
 
 # 提出图书交换请求
 class ApplicationPublishSerializer(ModelSerializer):
-    sender = IntegerField()
+    # sender = IntegerField()
     # receiver = IntegerField()
-    bid = IntegerField()
+    from_bid = IntegerField()
+    to_bid = IntegerField()
 
     class Meta:
         model = Application
-        fields = ('sender', 'bid')
+        fields = ('from_bid', 'to_bid')
 
 
 # 查看收到的申请请求
 class ApplicationDetailSerializer(HyperlinkedModelSerializer):
-    sender = HyperlinkedRelatedField(view_name='user_detail', read_only=True)
+    sender = HyperlinkedRelatedField(view_name='user_public_detail', read_only=True)
     # receiver = HyperlinkedRelatedField(view_name='user_detail', read_only=True)
-    book = HyperlinkedRelatedField(view_name='book_detail', read_only=True)
+    frombook = HyperlinkedRelatedField(view_name='book_detail', read_only=True)
+    tobook = HyperlinkedRelatedField(view_name='book_detail', read_only=True)
     sNickname = SerializerMethodField()
-    # rNickname = SerializerMethodField()
-    bookName = SerializerMethodField()
+    fbookname = SerializerMethodField()
+    tbookname = SerializerMethodField()
     status = SerializerMethodField()
     apid = IntegerField(source='id')
 
     class Meta:
         model = Application
-        fields = ('sender', 'book', 'sNickname', 'bookName', 'status', 'apid')
+        fields = ('sender', 'sNickname', 'frombook', 'fbookname', 'tobook', 'tbookname', 'status', 'apid')
 
     def get_sNickname(self, obj):
         return obj.sender.nickname
@@ -165,8 +170,11 @@ class ApplicationDetailSerializer(HyperlinkedModelSerializer):
     # def get_rNickname(self, obj):
     #     return obj.receiver.nickname
 
-    def get_bookName(self, obj):
-        return obj.book.name
+    def get_fbookname(self, obj):
+        return obj.frombook.name
+
+    def get_tbookname(self, obj):
+        return obj.tobook.name
 
     def get_status(self, obj):
         return obj.get_status_display()
@@ -174,12 +182,12 @@ class ApplicationDetailSerializer(HyperlinkedModelSerializer):
 
 # 发布一个商家
 class ShopPublishSerializer(ModelSerializer):
-    image = ImageField(default="foods/mask.png")
+    images = CharField(default="http://p9260z3xy.bkt.clouddn.com/foods/mask.png")
     introduce = CharField(default="")
 
     class Meta:
         model = Food
-        fields = ('name', 'location', 'image', 'introduce')
+        fields = ('name', 'location', 'images', 'introduce')
 
 
 # 评论详情
@@ -207,30 +215,37 @@ class FoodCommentDetailSerializer(ModelSerializer):
 
 # 商家列表
 class ShopListSerializer(ModelSerializer):
-    image = ImageField()
+    images = SerializerMethodField()
     sid = IntegerField(source='id')
     comment_num = SerializerMethodField()
+    location = SerializerMethodField()
 
     class Meta:
         model = Food
-        fields = ('name', 'sid', 'location', 'rating', 'introduce', 'image', 'comment_num')
+        fields = ('name', 'sid', 'location', 'rating', 'introduce', 'images', 'comment_num')
 
     def get_comment_num(self, obj):
         return obj.comments.all().count()
+
+    def get_images(self, obj):
+        return obj.images.split(";")[:3]
+
+    def get_location(self, obj):
+        return obj.get_location_display()
 
 
 # 商家详情
 class ShopDetailSerializer(ModelSerializer):
     #   comments = HyperlinkedRelatedField(view_name='foodComment_detail', many=True, read_only=True)
-    image = ImageField()
     sid = IntegerField(source='id')
     comment_num = SerializerMethodField()
-    ShopImages = UploadImageSerializer(many=True)
     comments = SerializerMethodField()
+    images = SerializerMethodField()
+    location = SerializerMethodField()
 
     class Meta:
         model = Food
-        fields = ('name', 'sid', 'location', 'rating', 'introduce', 'image', 'comment_num', 'ShopImages', 'comments')
+        fields = ('name', 'sid', 'location', 'rating', 'introduce', 'images', 'comment_num', 'comments')
 
     def get_comment_num(self, obj):
         return obj.comments.all().count()
@@ -238,6 +253,12 @@ class ShopDetailSerializer(ModelSerializer):
     # 只返回前六条评论，更多评论需要进一步加载评论
     def get_comments(self, obj):
         return FoodCommentDetailSerializer(obj.comments.all(), many=True).data[:6]
+
+    def get_images(self, obj):
+        return obj.images.split(";")
+
+    def get_location(self, obj):
+        return obj.get_location_display()
 
 
 # 发布对商家的评论
@@ -256,10 +277,11 @@ class FoodCommentPublishSerializer(ModelSerializer):
 
 # 发布流浪猫狗信息
 class AnimalMsgPublishSerializer(ModelSerializer):
+    images = CharField(allow_null=True)
 
     class Meta:
         model = Animals
-        fields = ('title', 'location', 'content')
+        fields = ('title', 'location', 'content', 'images')
 
     # def validate_location(self, value):
     #     data = self.get_initial()['location']
@@ -278,15 +300,16 @@ class AnimalMsgPublishSerializer(ModelSerializer):
 
 # 流浪动物列表
 class AnimalMsgListSerializer(HyperlinkedModelSerializer):
-    author = HyperlinkedRelatedField(view_name='user_detail', read_only=True)
+    author = HyperlinkedRelatedField(view_name='user_public_detail', read_only=True)
     headimg = SerializerMethodField()
     nickname = SerializerMethodField()
     aid = IntegerField(source='id')
-    AnimalImages = SerializerMethodField()
+    images = SerializerMethodField()
+    location = SerializerMethodField()
 
     class Meta:
         model = Animals
-        fields = ('author', 'headimg', 'nickname', 'aid', 'title', 'content', 'location', 'created_at', 'AnimalImages')
+        fields = ('author', 'headimg', 'nickname', 'aid', 'title', 'content', 'location', 'created_at', 'images')
 
     def get_nickname(self, obj):
         return obj.author.nickname
@@ -294,27 +317,37 @@ class AnimalMsgListSerializer(HyperlinkedModelSerializer):
     def get_headimg(self, obj):
         return obj.author.get_headimg_url()
 
-    def get_AnimalImages(self, obj):
-        return UploadImageSerializer(obj.AnimalImage.all(), many=True).data[:3]
+    def get_images(self, obj):
+        return obj.images.split(";")[:3] if obj.images else []
+
+    def get_location(self, obj):
+        return obj.get_location_display()
 
 
 # 流浪猫狗信息详情
 class AnimalMsgDetailSerializer(HyperlinkedModelSerializer):
-    author = HyperlinkedRelatedField(view_name='user_detail', read_only=True)
+    author = HyperlinkedRelatedField(view_name='user_public_detail', read_only=True)
     headimg = SerializerMethodField()
     nickname = SerializerMethodField()
     aid = IntegerField(source='id')
-    AnimalImages = UploadImageSerializer(many=True)
+    images = SerializerMethodField()
+    location = SerializerMethodField()
 
     class Meta:
         model = Animals
-        fields = ('author', 'headimg', 'nickname', 'aid', 'title', 'content', 'location', 'AnimalImages')
+        fields = ('author', 'headimg', 'nickname', 'aid', 'title', 'content', 'location', 'images')
 
     def get_nickname(self, obj):
         return obj.author.nickname
 
     def get_headimg(self, obj):
         return obj.author.get_headimg_url()
+
+    def get_images(self, obj):
+        return obj.images.split(";") if obj.images else []
+
+    def get_location(self, obj):
+        return obj.get_location_display()
 
 
 # 申请处理
@@ -324,4 +357,10 @@ class ApplicationHandleSerializer(ModelSerializer):
     class Meta:
         model = Application
         fields = ('result',)
+
+    def validate_result(self, value):
+        data = int(self.get_initial()['result'])
+        if data not in [1, 2]:
+            raise ValidationError('Invalid param!')
+        return value
 
