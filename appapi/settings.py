@@ -45,7 +45,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'django_filters',
     'corsheaders',
-    'channels',
+    # 'channels',
 ]
 
 MIDDLEWARE = [
@@ -103,7 +103,7 @@ CHANNEL_LAYERS = {
     },
 }
 
-ASGI_APPLICATION = 'appapi.routing.application'
+# ASGI_APPLICATION = 'appapi.routing.application'
 # Password validation
 # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
 
