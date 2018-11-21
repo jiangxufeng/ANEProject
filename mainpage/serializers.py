@@ -160,6 +160,13 @@ class ApplicationDetailSerializer(HyperlinkedModelSerializer):
     status = SerializerMethodField()
     apid = IntegerField(source='id')
 
+    @staticmethod
+    def set_eager_loading(queryset):
+        queryset = queryset.select_related('sender')
+        queryset = queryset.select_related('frombook')
+        queryset = queryset.select_related('tobook')
+        return queryset
+
     class Meta:
         model = Application
         fields = ('sender', 'sNickname', 'frombook', 'fbookname', 'tobook', 'tbookname', 'status', 'apid')
@@ -194,7 +201,6 @@ class ShopPublishSerializer(ModelSerializer):
 class FoodCommentDetailSerializer(ModelSerializer):
     owner = SerializerMethodField()
     headimg = SerializerMethodField()
-
 
     @staticmethod
     def setup_eager_loading(queryset):
@@ -306,6 +312,11 @@ class AnimalMsgListSerializer(HyperlinkedModelSerializer):
     aid = IntegerField(source='id')
     images = SerializerMethodField()
     location = SerializerMethodField()
+
+    @staticmethod
+    def set_eager_loading(queryset):
+        queryset = queryset.select_related('author')
+        return queryset
 
     class Meta:
         model = Animals

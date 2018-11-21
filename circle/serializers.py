@@ -88,7 +88,7 @@ class PostLikeReturnSerializer(HyperlinkedModelSerializer):
         model = PostLike
         fields = ('owner', 'headimg', 'lid')
 
-    def get_headImg(self, obj):
+    def get_headimg(self, obj):
         return obj.owner.get_headimg_url()
 
 

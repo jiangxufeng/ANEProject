@@ -9,8 +9,22 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.conf import settings
 from rest_framework.authtoken.models import Token
-# from django.shortcuts import reverse
+from notice.models import Notice
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 
+
+# from django.shortcuts import reverse
+# 消息推送
+def push(username, event):
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        username,
+        {
+            "type": "push.message",
+            "event": event
+        }
+    )
 
 # 生成初始昵称
 def random_name():
@@ -75,6 +89,8 @@ class Follow(models.Model):
     def __str__(self):
         return self.follows.username
 
+    def description(self):
+        return {'fans_name': self.fans.nickname, 'fans_headimg': self.fans.get_headimg_url()}
 
 # class Fans(models.Model):
 #
@@ -92,3 +108,13 @@ class Follow(models.Model):
 def create_auth_token(sender, instance=None, created=False, **kwargs):
     if created:
         Token.objects.create(user=instance)
+
+
+@receiver(post_save, sender=Follow)
+def create_auth_token(sender, instance=None, created=False, **kwargs):
+    entity = instance
+    if created:
+        event = Notice(sender=entity.fans, receiver=entity.follows, event=entity, type=1)
+        event.save()
+        push(entity.follows.username, {'type': 1})
+

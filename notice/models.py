@@ -3,6 +3,22 @@ from django.conf import settings
 from django.db.models import signals
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import fields
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+
+
+# 消息推送
+def push(username, event):
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        username,
+        {
+            "type": "push.message",
+            "event": event
+        }
+    )
 
 
 # Create your models here.
@@ -35,3 +51,33 @@ class Notice(models.Model):
     def reading(self):
         if not self.status:
             self.status = True
+
+
+# 聊天记录
+class Messages(models.Model):
+    # 信息发送者
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='message_sender')
+    # 信息接收者
+    receiver = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='message_receiver')
+    # 信息内容
+    body = models.CharField(max_length=1024, verbose_name='message_body')
+    # 发送时间
+    created = models.DateTimeField(auto_now_add=True)
+    # 状态
+    status = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.body
+
+    class Meta:
+        verbose_name = 'message'
+        verbose_name_plural = 'messages'
+        ordering = ('-created',)
+
+
+@receiver(post_save, sender=Messages)
+def post_application_notice(sender, instance=None, created=False, **kwargs):
+    entity = instance
+    if created:
+        push(entity.sender.username, {'type': 5, 'text': entity.id})
+        push(entity.receiver.username, {'type': 5, 'text': entity.id})

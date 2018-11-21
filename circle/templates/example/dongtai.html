@@ -13,14 +13,43 @@
 
 <script>
     var username = {{ room_name_json }};
-    var chatSocket = new WebSocket(
-        'ws://' + window.location.host + '/push/' + username + '/');
 
-    chatSocket.onopen = function open() {
-      console.log('WebSockets connection created.');
+    var pushSocket = new WebSocket(
+        'ws://' + window.location.host + '/push/' + '2016301500226' + '/');
+
+    pushSocket.onopen = function open() {
+      console.log('WebSockets1 connection created.');
     };
 
-    chatSocket.onmessage = function(e) {
+    // var chatSocket = new WebSocket(
+    //     'ws://' + window.location.host + '/push/' + username + '/');
+    //
+    // chatSocket.onopen = function open() {
+    //   console.log('WebSockets connection created.');
+    // };
+    // chatSocket.onmessage = function(e) {
+    //     var data = JSON.parse(e.data);
+    //     console.log(data);
+    //     var message = data['event']['type'];
+    //     if (message == 0) {
+    //         var types = "有新评论";
+    //     }// var title = data['title'];
+    //     else if(message == 4){
+    //         var types = "有人点赞了";
+    //     }
+    //     else if(message == 1){
+    //         var types = "有人关注了";
+    //     }
+    //     else if(message == 2){
+    //         var types = "有新的图书申请了";
+    //     }
+    //     document.querySelector('#chat-log').innerHTML += (types + "<br/>");
+    // };
+    //
+    // chatSocket.onclose = function(e) {
+    //     console.error('Chat socket closed unexpectedly');
+    // };
+    pushSocket.onmessage = function(e) {
         var data = JSON.parse(e.data);
         console.log(data);
         var message = data['event']['type'];
@@ -30,10 +59,16 @@
         else if(message == 4){
             var types = "有人点赞了";
         }
+        else if(message == 1){
+            var types = "有人关注了";
+        }
+        else if(message == 2){
+            var types = "有新的图书申请了";
+        }
         document.querySelector('#chat-log').innerHTML += (types + "<br/>");
     };
 
-    chatSocket.onclose = function(e) {
+    pushSocket.onclose = function(e) {
         console.error('Chat socket closed unexpectedly');
     };
 

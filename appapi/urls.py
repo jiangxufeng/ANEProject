@@ -25,7 +25,7 @@ urlpatterns = [
     url(r'^v1/users/', include('account.urls')),
     url(r'^v1/', include('mainpage.urls')),
     url(r'^v1/', include('circle.urls'),),
-    url(r'^v1/notices/', include('notice.urls')),
+    url(r'^v1/', include('notice.urls')),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 handler404 = page_not_found

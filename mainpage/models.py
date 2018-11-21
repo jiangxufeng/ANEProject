@@ -6,7 +6,21 @@ from django.contrib.contenttypes import fields
 from django.db.models import signals
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-# from channel.consumers import push
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+
+
+# from django.shortcuts import reverse
+# 消息推送
+def push(username, event):
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        username,
+        {
+            "type": "push.message",
+            "event": event
+        }
+    )
 
 
 def get_image_upload_to(instance, filename):
@@ -216,5 +230,5 @@ def post_application_notice(sender, instance=None, created=False, **kwargs):
     if created:
         event = Notice(sender=entity.sender, receiver=entity.receiver, event=entity, type=2)
         event.save()
-        # push(entity.receiver.username, {'type': 2})
+        push(entity.receiver.username, {'type': 2})
 

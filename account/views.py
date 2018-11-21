@@ -40,7 +40,13 @@ from rewrite.pagination import Pagination
 # from django.conf import settings
 # from rest_framework.authtoken.models import Token
 # from rewrite.permissions import get_authentication
-from rewrite.exception import FoundUserFailed, WrongUsernameOrPwd, FollowAuthenticationFailed, PasswordIsSame
+from rewrite.exception import (
+    FoundUserFailed,
+    WrongUsernameOrPwd,
+    FollowAuthenticationFailed,
+    PasswordIsSame,
+    AlreadyFollowTheUser,
+)
 
 #EXPIRE_MINUTES = getattr(settings, 'REST_FRAMEWORK_TOKEN_EXPIRE_MINUTES', 1)
 
@@ -257,6 +263,9 @@ class MakeFriendView(APIView):
         if user == idols:
             raise FollowAuthenticationFailed
 
+        if Follow.objects.filter(follows=idols, fans=user):
+            raise AlreadyFollowTheUser
+
         follow = Follow.objects.create(follows=idols, fans=user)
         follow.save()
         msg = Response({
@@ -298,14 +307,14 @@ class GetFollowView(generics.ListAPIView):
             raise FoundUserFailed
         else:
             queryset = Follow.objects.filter(fans=owner)
-            queryset = self.get_serializer().setup_eager_loading(queryset)
+            queryset = self.get_serializer_class().setup_eager_loading(queryset)
             return queryset.order_by('id')
 
 
 # 获取粉丝列表
 class GetFansView(generics.ListAPIView):
     permission_classes = (AllowAny,)
-    serializer_class = FollowSerializer
+    serializer_class = FansSerializer
     pagination_class = Pagination
     # authentication_classes = (MyAuthentication,)
 
@@ -316,6 +325,7 @@ class GetFansView(generics.ListAPIView):
             raise FoundUserFailed
         else:
             queryset = Follow.objects.filter(follows=owner)
+            queryset = self.get_serializer_class().setup_eager_loading(queryset)
             return queryset.order_by('id')
 
 
@@ -323,6 +333,15 @@ class GetFansView(generics.ListAPIView):
 def page_not_found(request):
     return render(request, '404.json')
 
+
+class UserListView(generics.ListAPIView):
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (MyAuthentication,)
+    serializer_class = UserPublicDetailSerializer
+
+    def get_queryset(self):
+        queryset = LoginUser.objects.all()
+        return queryset
 
 
 

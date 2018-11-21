@@ -9,7 +9,21 @@ from django.db.models import signals
 from notice.models import Notice
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-# from channel.consumers import push
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+
+
+# from django.shortcuts import reverse
+# 消息推送
+def push(username, event):
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        username,
+        {
+            "type": "push.message",
+            "event": event
+        }
+    )
 
 
 def get_pyImage_upload_to():
@@ -124,7 +138,7 @@ def post_like_notice(sender, instance=None, created=False, **kwargs):
         event.save()
         # 消息推送
         # 推送对象为消息接受者，推送内容为消息类型
-        # push(entity.passage.owner.username, {'type': 4})
+        push(entity.passage.owner.username, {'type': 4})
 
 
 @receiver(post_save, sender=PostComment)
@@ -133,4 +147,4 @@ def post_comment_notice(sender, instance=None, created=False, **kwargs):
     if created:
         event = Notice(sender=entity.owner, receiver=entity.passage.owner, event=entity, type=0)
         event.save()
-        # push(entity.passage.owner.username, {'type': 0})
+        push(entity.passage.owner.username, {'type': 0})

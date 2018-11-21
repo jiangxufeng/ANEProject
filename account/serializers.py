@@ -94,7 +94,7 @@ class FansSerializer(ModelSerializer):
 
     def get_url(self, obj):
         #  print(obj.follows.headimg)
-        return reverse('user__public_detail', args=(obj.fans.id,))
+        return reverse('user_public_detail', args=(obj.fans.id,))
 
     def get_headimg(self, obj):
         return obj.fans.get_headimg_url()

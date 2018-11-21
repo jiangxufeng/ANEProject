@@ -391,6 +391,8 @@ class AnimalsMsgListView(generics.ListAPIView):
 
     def get_queryset(self):
         queryset = Animals.objects.all()
+        # 对部分信息进行预加载
+        queryset = self.get_serializer_class().set_eager_loading(queryset)
         return queryset.order_by('-created_at')
 
 
@@ -450,6 +452,7 @@ class ApplicationReceiveView(generics.ListAPIView):
     def get_queryset(self):
         receiver = self.request.user
         queryset = Application.objects.filter(receiver=receiver)
+        queryset = self.get_serializer_class().set_eager_loading(queryset)
         return queryset.order_by('status')
 
 
@@ -469,6 +472,7 @@ class ApplicationSendView(generics.ListAPIView):
     def get_queryset(self):
         sender = self.request.user
         queryset = Application.objects.filter(sender=sender)
+        queryset = self.get_serializer_class().set_eager_loading(queryset)
         return queryset.order_by('status')
 
 
