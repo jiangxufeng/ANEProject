@@ -1,5 +1,5 @@
 import requests
-# from rewrite.exception import ServerWrong
+from rewrite.exception import ServerWrong
 
 headers = {
     'Connection': 'keep-alive',
@@ -28,7 +28,3 @@ def Userlogin(username, password):
         return json_2['data']['name']
     else:
         return False
-
-
-if __name__ == "__main__":
-    print(Userlogin('2016301500226', '142510'))
