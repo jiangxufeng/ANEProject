@@ -9,21 +9,21 @@ from django.db.models import signals
 from notice.models import Notice
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from asgiref.sync import async_to_sync
-from channels.layers import get_channel_layer
+# from asgiref.sync import async_to_sync
+# from channels.layers import get_channel_layer
 
 
 # from django.shortcuts import reverse
 # 消息推送
-def push(username, event):
-    channel_layer = get_channel_layer()
-    async_to_sync(channel_layer.group_send)(
-        username,
-        {
-            "type": "push.message",
-            "event": event
-        }
-    )
+# def push(username, event):
+#     channel_layer = get_channel_layer()
+#     async_to_sync(channel_layer.group_send)(
+#         username,
+#         {
+#             "type": "push.message",
+#             "event": event
+#         }
+#     )
 
 
 def get_pyImage_upload_to():

@@ -5,20 +5,20 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import fields
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from asgiref.sync import async_to_sync
-from channels.layers import get_channel_layer
+# from asgiref.sync import async_to_sync
+# from channels.layers import get_channel_layer
 
 
 # 消息推送
-def push(username, event):
-    channel_layer = get_channel_layer()
-    async_to_sync(channel_layer.group_send)(
-        username,
-        {
-            "type": "push.message",
-            "event": event
-        }
-    )
+# def push(username, event):
+#     channel_layer = get_channel_layer()
+#     async_to_sync(channel_layer.group_send)(
+#         username,
+#         {
+#             "type": "push.message",
+#             "event": event
+#         }
+#     )
 
 
 # Create your models here.
