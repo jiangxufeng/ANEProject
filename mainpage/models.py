@@ -224,11 +224,11 @@ class Images(models.Model):
         return 'http://p9260z3xy.bkt.clouddn.com/' + str(self.image)
 
 
-@receiver(post_save, sender=Application)
-def post_application_notice(sender, instance=None, created=False, **kwargs):
-    entity = instance
-    if created:
-        event = Notice(sender=entity.sender, receiver=entity.receiver, event=entity, type=2)
-        event.save()
-        push(entity.receiver.username, {'type': 2})
+# @receiver(post_save, sender=Application)
+# def post_application_notice(sender, instance=None, created=False, **kwargs):
+#     entity = instance
+#     if created:
+#         event = Notice(sender=entity.sender, receiver=entity.receiver, event=entity, type=2)
+#         event.save()
+#         push(entity.receiver.username, {'type': 2})
 

@@ -104,17 +104,17 @@ class Follow(models.Model):
 #         return self.owner.username
 
 
-@receiver(post_save, sender=settings.AUTH_USER_MODEL)
-def create_auth_token(sender, instance=None, created=False, **kwargs):
-    if created:
-        Token.objects.create(user=instance)
-
-
-@receiver(post_save, sender=Follow)
-def create_auth_token(sender, instance=None, created=False, **kwargs):
-    entity = instance
-    if created:
-        event = Notice(sender=entity.fans, receiver=entity.follows, event=entity, type=1)
-        event.save()
-        push(entity.follows.username, {'type': 1})
+# @receiver(post_save, sender=settings.AUTH_USER_MODEL)
+# def create_auth_token(sender, instance=None, created=False, **kwargs):
+#     if created:
+#         Token.objects.create(user=instance)
+#
+#
+# @receiver(post_save, sender=Follow)
+# def user_follow_notice(sender, instance=None, created=False, **kwargs):
+#     entity = instance
+#     if created:
+#         event = Notice(sender=entity.fans, receiver=entity.follows, event=entity, type=1)
+#         event.save()
+#         push(entity.follows.username, {'type': 1})
 

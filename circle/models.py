@@ -130,21 +130,21 @@ class PostLike(models.Model):
 # #signals.post_save.connect(comment_save, sender=PostLike)
 
 
-@receiver(post_save, sender=PostLike)
-def post_like_notice(sender, instance=None, created=False, **kwargs):
-    entity = instance
-    if created:
-        event = Notice(sender=entity.owner, receiver=entity.passage.owner, event=entity, type=4)
-        event.save()
-        # 消息推送
-        # 推送对象为消息接受者，推送内容为消息类型
-        push(entity.passage.owner.username, {'type': 4})
-
-
-@receiver(post_save, sender=PostComment)
-def post_comment_notice(sender, instance=None, created=False, **kwargs):
-    entity = instance
-    if created:
-        event = Notice(sender=entity.owner, receiver=entity.passage.owner, event=entity, type=0)
-        event.save()
-        push(entity.passage.owner.username, {'type': 0})
+# @receiver(post_save, sender=PostLike)
+# def post_like_notice(sender, instance=None, created=False, **kwargs):
+#     entity = instance
+#     if created:
+#         event = Notice(sender=entity.owner, receiver=entity.passage.owner, event=entity, type=4)
+#         event.save()
+#         # 消息推送
+#         # 推送对象为消息接受者，推送内容为消息类型
+#         push(entity.passage.owner.username, {'type': 4})
+#
+#
+# @receiver(post_save, sender=PostComment)
+# def post_comment_notice(sender, instance=None, created=False, **kwargs):
+#     entity = instance
+#     if created:
+#         event = Notice(sender=entity.owner, receiver=entity.passage.owner, event=entity, type=0)
+#         event.save()
+#         push(entity.passage.owner.username, {'type': 0})

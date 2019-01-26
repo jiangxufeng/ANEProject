@@ -75,9 +75,9 @@ class Messages(models.Model):
         ordering = ('-created',)
 
 
-@receiver(post_save, sender=Messages)
-def post_application_notice(sender, instance=None, created=False, **kwargs):
-    entity = instance
-    if created:
-        push(entity.sender.username, {'type': 5, 'text': entity.id})
-        push(entity.receiver.username, {'type': 5, 'text': entity.id})
+# @receiver(post_save, sender=Messages)
+# def post_application_notice(sender, instance=None, created=False, **kwargs):
+#     entity = instance
+#     if created:
+#         push(entity.sender.username, {'type': 5, 'text': entity.id})
+#         push(entity.receiver.username, {'type': 5, 'text': entity.id})
