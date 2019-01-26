@@ -170,3 +170,9 @@ class FoundNoticeFailed(APIException):
     default_detail = _("50001Not found the notice.")
     status_code = 404
 
+
+# 已经关注该用户
+class AlreadyFollowTheUser(APIException):
+    default_detail = _("20009You already follow the user.")
+    status_code = 400
+
