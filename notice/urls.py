@@ -15,8 +15,8 @@ from .views import (
 
 urlpatterns = [
     url(r'^notices/$', UserNoticeListView.as_view(), name='user_all_notice'),
-    url(r'^notices/hasRead/(?P<nid>\d+)/$', HasReadTheNoticeView.as_view(), name='change_status'),
-    url(r'^message/(?P<pk>\d+)/$', MessageDetailView.as_view(), name='message_detail'),
+    url(r'^notices/hasRead/(?P<nid>\d+)$', HasReadTheNoticeView.as_view(), name='change_status'),
+    url(r'^message/(?P<pk>\d+)$', MessageDetailView.as_view(), name='message_detail'),
     url(r'^message/$', MessageListView.as_view(), name='message_list'),
-    url(r'^message/publish', MessagePublishView.as_view(), name='message_publish')
+    url(r'^message/publish/', MessagePublishView.as_view(), name='message_publish')
 ]
