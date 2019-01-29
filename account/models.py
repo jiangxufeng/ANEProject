@@ -75,7 +75,7 @@ class LoginUser(AbstractUser):
         return self.username
 
     def get_headimg_url(self):
-        return 'http://p9260z3xy.bkt.clouddn.com/' + str(self.headimg)
+        return settings.PREFIX_URL + settings.QINIU_BUCKET_DOMAIN + '/' + str(self.headimg)
     #
     # def save(self, *args, **kwargs):
     #     self.school_id = int(self.get_username())
