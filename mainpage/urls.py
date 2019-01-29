@@ -22,6 +22,7 @@ from .views import (
     ApplicationReceiveView,
     ApplicationSendView,
     ApplicationHandleView,
+    Weather,
 )
 
 
@@ -44,5 +45,5 @@ urlpatterns = [
     url(r'^animals/publish/', AnimalsMsgPublishView.as_view(), name='animal_publish'),
     url(r'^animals/$', AnimalsMsgListView.as_view(), name='animal_list'),
     url(r'^animals/(?P<pk>\d+)$', AnimalsMsgDetailView.as_view(), name='animal_detail'),
-
+    url(r'^weather/$', Weather.as_view(), name="get_weather")
 ]

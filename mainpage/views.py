@@ -55,6 +55,9 @@ from rewrite.exception import (
     ExchangeIsYourself
 )
 from django.db.models import Q
+import requests
+import xmltodict
+import json
 # from rewrite.permissions import IsOwnerFilterBackend
 
 
@@ -509,4 +512,44 @@ class ApplicationHandleView(APIView):
                 }, HTTP_200_OK)
                 return msg
 
+
+# 天气接口
+class Weather(APIView):
+    """
+        用户获取天气推荐接口
+    """
+    permission_classes = (AllowAny,)
+    # authentication_classes = (MyAuthentication,)
+    # serializer_class = ApplicationHandleSerializer
+
+    def get(self, request):
+        url = 'http://wthrcdn.etouch.cn/WeatherApi?city=%s' % request.GET.get('city')
+        try:
+            req = requests.get(url)
+            if req.status_code == 200:
+                conv = xmltodict.parse(req.text)
+            else:
+                return Response({
+                    'error': '50001',
+                    'error_msg': '获取天气失败,错误原因：API请求失败'
+                }, status=HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({
+                'error': '50001',
+                'error_msg': '获取天气失败，错误原因：%s' % e
+            }, status=HTTP_400_BAD_REQUEST)
+        else:
+            res = json.loads(json.dumps(conv))['resp']
+            try:
+                error = res['error']
+
+                return Response({
+                    'error': '50002',
+                    'error_msg': error
+                }, HTTP_400_BAD_REQUEST)
+            except KeyError:
+                return Response({
+                    'error': '0',
+                    'data': res,
+                })
 
