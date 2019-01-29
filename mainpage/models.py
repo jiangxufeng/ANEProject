@@ -54,7 +54,9 @@ class Book(models.Model):
     # 图书名
     name = models.CharField(max_length=20, verbose_name='name')
     # 图书封面照片
-    images = models.CharField(max_length=1024, default="http://p9260z3xy.bkt.clouddn.com/books/mask.png", verbose_name='image')
+    images = models.CharField(max_length=1024,
+                              default=settings.PREFIX_URL + settings.QINIU_BUCKET_DOMAIN + '/' + "books/mask.png",
+                              verbose_name='image')
     # 图书语言
     language = models.CharField(max_length=2, default='ch', choices=LANGUAGE_CHOICE, verbose_name='language')
     # 图书地界（国内或国外）
@@ -129,7 +131,9 @@ class Food(models.Model):
     # 商家地点
     location = models.CharField(max_length=1, verbose_name='location', default='1', choices=PLACE_CHOICE)
     # 图片
-    images = models.CharField(max_length=1024, default="http://p9260z3xy.bkt.clouddn.com/foods/mask.png", verbose_name='image')
+    images = models.CharField(max_length=1024,
+                              default=settings.PREFIX_URL + settings.QINIU_BUCKET_DOMAIN + '/' + "shops/mask.png",
+                              verbose_name='image')
     # 评分
     rating = models.FloatField(default=0.0, verbose_name='rating')
     # 商家介绍
