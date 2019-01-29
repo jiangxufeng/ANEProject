@@ -82,7 +82,7 @@ WSGI_APPLICATION = 'appapi.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
-
+#
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.sqlite3',
@@ -189,15 +189,15 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 QINIU_ACCESS_KEY = '7mn1axVj1LKGbSOpXI6RvqRkdI-zzzE2hnHwOK8I'
 QINIU_SECRET_KEY = '8AhoPQJH7U3GR-Cq_5slGVvzbXvF4P7F-P1Shhpv'
-QINIU_BUCKET_NAME = 'android'
-QINIU_BUCKET_DOMAIN = 'p9260z3xy.bkt.clouddn.com'
+QINIU_BUCKET_NAME = 'anep'
+QINIU_BUCKET_DOMAIN = 'pm30amk0x.bkt.clouddn.com'
 QINIU_SECURE_URL = False
 
 DEFAULT_FILE_STORAGE = 'qiniustorage.backends.QiniuStorage'
 
 PREFIX_URL = 'http://'
 
-STATIC_URL = '/api/v1/static/'
+STATIC_URL = '/v1/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static').replace("\\", "/")
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media').replace("\\", "/")

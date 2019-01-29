@@ -3,6 +3,7 @@ from django.conf import settings
 # Create your models here.
 from notice.models import Notice
 from django.contrib.contenttypes import fields
+from django.conf import settings
 from django.db.models import signals
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -221,7 +222,7 @@ class Images(models.Model):
         return self.image
 
     def get_img_url(self):
-        return 'http://p9260z3xy.bkt.clouddn.com/' + str(self.image)
+        return settings.PREFIX_URL + settings.QINIU_BUCKET_DOMAIN + '/' + str(self.image)
 
 
 # @receiver(post_save, sender=Application)
