@@ -197,7 +197,7 @@ DEFAULT_FILE_STORAGE = 'qiniustorage.backends.QiniuStorage'
 
 PREFIX_URL = 'http://'
 
-STATIC_URL = '/v1/static/'
+STATIC_URL = '/api/v1/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static').replace("\\", "/")
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media').replace("\\", "/")
@@ -205,7 +205,7 @@ MEDIA_URL = PREFIX_URL + QINIU_BUCKET_DOMAIN + '/media/'
 
 # 跨域
 CORS_ALLOW_CREDENTIALS = True
-CORS_ORIGIN_ALLOW_ALL = False
+CORS_ORIGIN_ALLOW_ALL = True
 CORS_ORIGIN_WHITELIST = (
     '*'
 )
