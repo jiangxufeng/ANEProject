@@ -38,7 +38,7 @@ class Pagination(PageNumberPagination):
         return Response(OrderedDict([
             ('count', self.page.paginator.count),
             ('number', number),
-            ('next', next_link),
+            ('next', next_link.replace('http', 'https')),
             ('previous', previous),
             ('data', data),
             ('error', 0)
