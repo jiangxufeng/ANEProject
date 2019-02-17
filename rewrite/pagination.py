@@ -39,7 +39,7 @@ class Pagination(PageNumberPagination):
             ('count', self.page.paginator.count),
             ('number', number),
             ('next', next_link.replace('http', 'https')),
-            ('previous', previous),
+            ('previous', previous.replace('http', 'https')),
             ('data', data),
             ('error', 0)
         ]))
