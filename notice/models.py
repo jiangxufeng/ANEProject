@@ -5,20 +5,20 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import fields
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-# from asgiref.sync import async_to_sync
-# from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 
 
 # 消息推送
-# def push(username, event):
-#     channel_layer = get_channel_layer()
-#     async_to_sync(channel_layer.group_send)(
-#         username,
-#         {
-#             "type": "push.message",
-#             "event": event
-#         }
-#     )
+def push(username, event):
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        username,
+        {
+            "type": "push.message",
+            "event": event
+        }
+    )
 
 
 # Create your models here.
@@ -75,9 +75,9 @@ class Messages(models.Model):
         ordering = ('-created',)
 
 
-# @receiver(post_save, sender=Messages)
-# def post_application_notice(sender, instance=None, created=False, **kwargs):
-#     entity = instance
-#     if created:
-#         push(entity.sender.username, {'type': 5, 'text': entity.id})
-#         push(entity.receiver.username, {'type': 5, 'text': entity.id})
+@receiver(post_save, sender=Messages)
+def post_application_notice(sender, instance=None, created=False, **kwargs):
+    entity = instance
+    if created:
+        push(entity.sender.username, {'type': 5, 'text': entity.id})
+        push(entity.receiver.username, {'type': 5, 'text': entity.id})

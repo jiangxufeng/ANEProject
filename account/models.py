@@ -10,21 +10,21 @@ from django.dispatch import receiver
 from django.conf import settings
 from rest_framework.authtoken.models import Token
 from notice.models import Notice
-# from asgiref.sync import async_to_sync
-# from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 
 
 # from django.shortcuts import reverse
 # 消息推送
-# def push(username, event):
-#     channel_layer = get_channel_layer()
-#     async_to_sync(channel_layer.group_send)(
-#         username,
-#         {
-#             "type": "push.message",
-#             "event": event
-#         }
-#     )
+def push(username, event):
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        username,
+        {
+            "type": "push.message",
+            "event": event
+        }
+    )
 
 
 # 生成初始昵称
@@ -50,7 +50,7 @@ class LoginUser(AbstractUser):
     # 昵称
     nickname = models.CharField(max_length=20, default=random_name(), verbose_name='nickname')
     # 头像
-    headimg = models.ImageField(default='user/moren.jpeg', upload_to=get_upload_to, verbose_name='headimg')
+    headimg = models.ImageField(default='users/moren.png', upload_to=get_upload_to, verbose_name='headimg')
     # 签名
     signature = models.CharField(max_length=32, default='这个人很懒，啥也没有留下！', verbose_name='signature')
     # 首次登录时间
@@ -105,17 +105,17 @@ class Follow(models.Model):
 #         return self.owner.username
 
 
-# @receiver(post_save, sender=settings.AUTH_USER_MODEL)
-# def create_auth_token(sender, instance=None, created=False, **kwargs):
-#     if created:
-#         Token.objects.create(user=instance)
-#
-#
-# @receiver(post_save, sender=Follow)
-# def user_follow_notice(sender, instance=None, created=False, **kwargs):
-#     entity = instance
-#     if created:
-#         event = Notice(sender=entity.fans, receiver=entity.follows, event=entity, type=1)
-#         event.save()
-#         push(entity.follows.username, {'type': 1})
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+def create_auth_token(sender, instance=None, created=False, **kwargs):
+    if created:
+        Token.objects.create(user=instance)
+
+
+@receiver(post_save, sender=Follow)
+def user_follow_notice(sender, instance=None, created=False, **kwargs):
+    entity = instance
+    if created:
+        event = Notice(sender=entity.fans, receiver=entity.follows, event=entity, type=1)
+        event.save()
+        push(entity.follows.username, {'type': 1})
 

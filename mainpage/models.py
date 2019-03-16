@@ -7,21 +7,19 @@ from django.conf import settings
 from django.db.models import signals
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-# from asgiref.sync import async_to_sync
-# from channels.layers import get_channel_layer
-
-
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 # from django.shortcuts import reverse
 # 消息推送
-# def push(username, event):
-#     channel_layer = get_channel_layer()
-#     async_to_sync(channel_layer.group_send)(
-#         username,
-#         {
-#             "type": "push.message",
-#             "event": event
-#         }
-#     )
+def push(username, event):
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        username,
+        {
+            "type": "push.message",
+            "event": event
+        }
+    )
 
 
 def get_image_upload_to(instance, filename):
@@ -229,11 +227,11 @@ class Images(models.Model):
         return settings.PREFIX_URL + settings.QINIU_BUCKET_DOMAIN + '/' + str(self.image)
 
 
-# @receiver(post_save, sender=Application)
-# def post_application_notice(sender, instance=None, created=False, **kwargs):
-#     entity = instance
-#     if created:
-#         event = Notice(sender=entity.sender, receiver=entity.receiver, event=entity, type=2)
-#         event.save()
-#         push(entity.receiver.username, {'type': 2})
+@receiver(post_save, sender=Application)
+def post_application_notice(sender, instance=None, created=False, **kwargs):
+    entity = instance
+    if created:
+        event = Notice(sender=entity.sender, receiver=entity.receiver, event=entity, type=2)
+        event.save()
+        push(entity.receiver.username, {'type': 2})
 

@@ -9,21 +9,21 @@ from django.db.models import signals
 from notice.models import Notice
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-# from asgiref.sync import async_to_sync
-# from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 
 
-# from django.shortcuts import reverse
+from django.shortcuts import reverse
 # 消息推送
-# def push(username, event):
-#     channel_layer = get_channel_layer()
-#     async_to_sync(channel_layer.group_send)(
-#         username,
-#         {
-#             "type": "push.message",
-#             "event": event
-#         }
-#     )
+def push(username, event):
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        username,
+        {
+            "type": "push.message",
+            "event": event
+        }
+    )
 
 
 def get_pyImage_upload_to():
@@ -111,12 +111,12 @@ class PostLike(models.Model):
 #         if entity.owner != entity.passage.owner:                       # 作者的回复不给作者通知
 #             event = Notice(sender=entity.owner, receiver=entity.passage.owner, event=entity, type=0)
 #             event.save()
-        # if entity.comment_parent is not None:		              # 回复评论给要评论的人通知
-        #     if entity.author.id != entity.comment_parent.author.id:   # 自己给自己写评论不通知
-        #         event = Notice(sender=entity.author, receiver=entity.comment_parent.author, event=entity, type=0)
-        #         event.save()
-
-
+#         if entity.comment_parent is not None:		              # 回复评论给要评论的人通知
+#             if entity.author.id != entity.comment_parent.author.id:   # 自己给自己写评论不通知
+#                 event = Notice(sender=entity.author, receiver=entity.comment_parent.author, event=entity, type=0)
+#                 event.save()
+#
+#
 # def like_save(sender, instance, signal, *args, **kwargs):
 #     entity = instance
 #     print(kwargs)
@@ -124,27 +124,27 @@ class PostLike(models.Model):
 #         if entity.owner != entity.passage.owner:                       # 作者的回复不给作者通知
 #             event = Notice(sender=entity.owner, receiver=entity.passage.owner, event=entity, type=4)
 #            event.save()
-
+#
 #
 # signals.post_save.connect(comment_save, sender=PostComment)
-# #signals.post_save.connect(comment_save, sender=PostLike)
+#signals.post_save.connect(comment_save, sender=PostLike)
 
 
-# @receiver(post_save, sender=PostLike)
-# def post_like_notice(sender, instance=None, created=False, **kwargs):
-#     entity = instance
-#     if created:
-#         event = Notice(sender=entity.owner, receiver=entity.passage.owner, event=entity, type=4)
-#         event.save()
-#         # 消息推送
-#         # 推送对象为消息接受者，推送内容为消息类型
-#         push(entity.passage.owner.username, {'type': 4})
-#
-#
-# @receiver(post_save, sender=PostComment)
-# def post_comment_notice(sender, instance=None, created=False, **kwargs):
-#     entity = instance
-#     if created:
-#         event = Notice(sender=entity.owner, receiver=entity.passage.owner, event=entity, type=0)
-#         event.save()
-#         push(entity.passage.owner.username, {'type': 0})
+@receiver(post_save, sender=PostLike)
+def post_like_notice(sender, instance=None, created=False, **kwargs):
+    entity = instance
+    if created:
+        event = Notice(sender=entity.owner, receiver=entity.passage.owner, event=entity, type=4)
+        event.save()
+        # 消息推送
+        # 推送对象为消息接受者，推送内容为消息类型
+        push(entity.passage.owner.username, {'type': 4})
+
+
+@receiver(post_save, sender=PostComment)
+def post_comment_notice(sender, instance=None, created=False, **kwargs):
+    entity = instance
+    if created:
+        event = Notice(sender=entity.owner, receiver=entity.passage.owner, event=entity, type=0)
+        event.save()
+        push(entity.passage.owner.username, {'type': 0})
