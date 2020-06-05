@@ -15,7 +15,7 @@ constantly==15.1.0
 coreapi==2.3.3
 coreschema==0.0.4
 daphne==2.2.0
-Django==1.11
+Django==1.11.29
 django-cors-headers==2.3.0
 django-filter==1.1.0
 django-qiniu-storage==2.3.1
